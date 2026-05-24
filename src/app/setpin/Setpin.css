@@ -1,0 +1,432 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500&display=swap");
+
+.setpin-page {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Space Mono", monospace;
+    overflow: hidden;
+}
+
+.setpin-content {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding: 40px 20px;
+    animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Eyebrow ── */
+.setpin-eyebrow {
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: rgba(255, 255, 255, 0.3);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+}
+.setpin-eyebrow span {
+    background: linear-gradient(90deg, #38bdf8, #a855f7, #fb923c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+}
+
+/* ── Title ── */
+.setpin-title {
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -1px;
+    line-height: 1.1;
+    margin-bottom: 10px;
+}
+
+.setpin-sub {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.75);
+    letter-spacing: 0.5px;
+    margin-bottom: 52px;
+    line-height: 1.7;
+    font-family: "Inter", "Segoe UI", sans-serif;
+    font-weight: 400;
+}
+
+/* ── Step indicator ── */
+.setpin-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 48px;
+}
+.setpin-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.18);
+    transition: color 0.3s;
+}
+.setpin-step.active {
+    color: rgba(255, 255, 255, 0.8);
+}
+.setpin-step.done {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.setpin-step-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.18);
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.setpin-step-num.active {
+    border-color: #ffffff;
+    color: #000000;
+    background: #ffffff;
+}
+.setpin-step-num.done {
+    border-color: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.35);
+}
+.setpin-step-line {
+    width: 60px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+.setpin-step-line-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.3);
+    transition: width 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Circles wrapper ── */
+.setpin-circles-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 48px;
+}
+
+/* ── PIN circles ── */
+.setpin-circles {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+}
+.setpin-circles.shake {
+    animation: shake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+@keyframes shake {
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+    18% {
+        transform: translateX(-10px);
+    }
+    36% {
+        transform: translateX(10px);
+    }
+    54% {
+        transform: translateX(-6px);
+    }
+    72% {
+        transform: translateX(6px);
+    }
+    90% {
+        transform: translateX(-3px);
+    }
+}
+
+.setpin-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    background: transparent;
+    text-align: center;
+    line-height: 64px;
+    font-size: 22px;
+    font-weight: 700;
+    font-family: "Space Mono", monospace;
+    color: #fff;
+    outline: none;
+    caret-color: transparent;
+    -webkit-text-security: disc;
+    overflow: hidden;
+    padding: 0;
+    box-sizing: border-box;
+    transition:
+        border-color 0.2s,
+        box-shadow 0.2s,
+        transform 0.2s;
+}
+.setpin-circle.visible {
+    -webkit-text-security: none;
+    font-size: 20px;
+}
+
+/* Sab circles  */
+.setpin-circle {
+    --accent: 251, 191, 36;
+}
+
+.setpin-circle.filled {
+    border-color: rgba(251, 191, 36, 0.85);
+    box-shadow: 0 0 22px rgba(251, 191, 36, 0.3);
+}
+.setpin-circle:focus {
+    border-color: rgba(251, 191, 36, 1);
+    box-shadow:
+        0 0 0 3px rgba(251, 191, 36, 0.12),
+        0 0 32px rgba(251, 191, 36, 0.35);
+    transform: translateY(-3px) scale(1.06);
+}
+
+/* ── Eye button ── */
+.setpin-eye-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.25);
+    cursor: pointer;
+    transition:
+        color 0.2s,
+        border-color 0.2s,
+        background 0.2s;
+    flex-shrink: 0;
+}
+.setpin-eye-btn:hover {
+    color: rgba(255, 255, 255, 0.7);
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+}
+.setpin-eye-btn.active {
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Error ── */
+.setpin-error {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255, 80, 80, 0.85);
+    margin-bottom: 24px;
+    animation: errIn 0.2s ease;
+}
+@keyframes errIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Divider ── */
+.setpin-divider {
+    width: 280px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.06);
+    margin: 0 auto 28px;
+}
+
+/* ══════════════════════════════════════
+   LANDING PAGE  HOVER BUTTON
+══════════════════════════════════════ */
+.setpin-btn-skew {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 2px solid #ffffff;
+    cursor: pointer;
+    padding: 16px 48px;
+    font-family: "Space Mono", monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    display: inline-block;
+    user-select: none;
+    min-width: 220px;
+    text-align: center;
+}
+.setpin-btn-skew.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+.skew-fill-left {
+    position: absolute;
+    top: 0;
+    left: -7%;
+    width: 55%;
+    height: 100%;
+    background: #ffffff;
+    transition: transform 0.5s ease;
+    z-index: 0;
+}
+.skew-fill-right {
+    position: absolute;
+    top: 0;
+    right: -5%;
+    width: 60%;
+    height: 100%;
+    background: #ffffff;
+    transition: transform 0.5s ease;
+    z-index: 0;
+}
+.skew-btn-text {
+    position: relative;
+    z-index: 1;
+    transition: color 0.4s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ── Change PIN  ── */
+.setpin-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 16px;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.3);
+    font-family: "Space Mono", monospace;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 2px;
+    cursor: pointer;
+    padding: 4px 0;
+    transition: color 0.2s;
+    text-transform: uppercase;
+}
+.setpin-btn-ghost:hover {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* ── Loader dots ── */
+.setpin-loader {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+.setpin-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #000;
+    animation: dotBounce 1s ease-in-out infinite;
+}
+.setpin-dot:nth-child(2) {
+    animation-delay: 0.15s;
+}
+.setpin-dot:nth-child(3) {
+    animation-delay: 0.3s;
+}
+@keyframes dotBounce {
+    0%,
+    60%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.3;
+    }
+    30% {
+        transform: translateY(-5px);
+        opacity: 1;
+    }
+}
+
+/* ── Success ── */
+.setpin-success {
+    animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    text-align: center;
+}
+.setpin-success-check {
+    font-size: 40px;
+    margin-bottom: 18px;
+    display: block;
+    animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes popIn {
+    from {
+        transform: scale(0.4);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+.setpin-success-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+}
+.setpin-success-sub {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.25);
+    letter-spacing: 3px;
+}
+
+@media (max-width: 500px) {
+    .setpin-circle {
+        width: 52px;
+        height: 52px;
+        font-size: 18px;
+        line-height: 52px;
+    }
+    .setpin-circles {
+        gap: 10px;
+    }
+    .setpin-title {
+        font-size: 26px;
+    }
+    .setpin-btn-skew {
+        padding: 14px 32px;
+        font-size: 11px;
+    }
+}

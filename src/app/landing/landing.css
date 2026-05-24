@@ -1,0 +1,81 @@
+@keyframes gradientSweep {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.animated-text {
+    background: linear-gradient(90deg, #38bdf8, #a855f7, #ff6b35, #22c55e, #38bdf8);
+    background-size: 300% 300%;
+    animation: gradientSweep 4s ease infinite;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+@property --angle {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
+}
+
+@keyframes rotate-border {
+    to {
+        --angle: 360deg;
+    }
+}
+
+.how-btn {
+    font-size: 13px;
+    padding: 14px 36px;
+    background: #000;
+    color: white; 
+    text-transform: uppercase;
+    position: relative;
+    border-radius: 100px;
+    cursor: pointer;
+    font-family: "Courier New", monospace;
+    font-weight: 900;
+    letter-spacing: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    outline: none;
+    transition: color 0.3s ease;
+}
+
+.how-btn:hover {
+    color: hsl(250, 66%, 61%); 
+}
+
+.how-btn::before,
+.how-btn::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    background-color: #000;
+    border-radius: inherit;
+    z-index: -1;
+}
+
+.how-btn::after {
+    filter: blur(8px);
+    z-index: -2;
+}
+
+.how-btn:hover::before,
+.how-btn:hover::after {
+    background-image: conic-gradient(
+        from var(--angle) at 50% 50%,
+        transparent 0%,
+        transparent 33%,
+        hsl(250, 66%, 61%) 50%,
+        transparent 66%,
+        transparent 100%
+    );
+    animation: rotate-border 3s linear infinite;
+}
