@@ -389,6 +389,7 @@
     display: block;
     animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 @keyframes popIn {
     from {
         transform: scale(0.4);
@@ -429,4 +430,51 @@
         padding: 14px 32px;
         font-size: 11px;
     }
+}
+
+/* ── Username Input ── */
+.setpin-username-input {
+    width: 320px;
+    padding: 20px 28px;
+    background: rgba(251, 191, 36, 0.03);
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    border-radius: 16px;
+    color: #ffffff;
+    font-family: "Space Mono", monospace;
+    font-size: 20px;
+    letter-spacing: 4px;
+    outline: none;
+    text-align: center;
+    transition:
+        border-color 0.25s,
+        box-shadow 0.25s,
+        background 0.25s;
+    caret-color: rgba(251, 191, 36, 0.8);
+}
+
+.setpin-username-input:focus {
+    background: rgba(251, 191, 36, 0.06);
+    border-color: rgba(251, 191, 36, 1);
+    box-shadow:
+        0 0 0 3px rgba(251, 191, 36, 0.1),
+        0 0 40px rgba(251, 191, 36, 0.2);
+}
+
+.setpin-username-input::placeholder {
+    color: rgba(255, 255, 255, 0.12);
+    letter-spacing: 2px;
+    font-size: 16px;
+}
+
+/* ── Username preview ── */
+.setpin-username-preview {
+    margin-top: 14px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, 0.18);
+    font-family: "Space Mono", monospace;
+}
+
+.setpin-username-preview span {
+    color: rgba(251, 191, 36, 0.55);
 }

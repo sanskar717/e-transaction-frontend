@@ -1,16 +1,14 @@
 "use client"
 import { useEffect, useRef, useState } from "react"
 
-
-
 const variants = {
-    fadeUp:    { hidden: "translateY(40px)",   visible: "translateY(0px)"  },
-    fadeDown:  { hidden: "translateY(-40px)",  visible: "translateY(0px)"  },
-    fadeLeft:  { hidden: "translateX(-50px)",  visible: "translateX(0px)"  },
-    fadeRight: { hidden: "translateX(50px)",   visible: "translateX(0px)"  },
-    fade:      { hidden: "translateY(0px)",    visible: "translateY(0px)"  },
-    zoom:      { hidden: "scale(0.85)",        visible: "scale(1)"         },
-    flip:      { hidden: "rotateX(45deg)",     visible: "rotateX(0deg)"    },
+    fadeUp: { hidden: "translateY(40px)", visible: "translateY(0px)" },
+    fadeDown: { hidden: "translateY(-40px)", visible: "translateY(0px)" },
+    fadeLeft: { hidden: "translateX(-50px)", visible: "translateX(0px)" },
+    fadeRight: { hidden: "translateX(50px)", visible: "translateX(0px)" },
+    fade: { hidden: "translateY(0px)", visible: "translateY(0px)" },
+    zoom: { hidden: "scale(0.85)", visible: "scale(1)" },
+    flip: { hidden: "rotateX(45deg)", visible: "rotateX(0deg)" },
 }
 
 export default function AnimateIn({
@@ -38,7 +36,7 @@ export default function AnimateIn({
                     setVisible(false)
                 }
             },
-            { threshold }
+            { threshold },
         )
         observer.observe(el)
         return () => observer.disconnect()

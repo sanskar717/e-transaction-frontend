@@ -1,12 +1,15 @@
 "use client"
 import { useState, useRef, useEffect } from "react"
 import ShootingStars from "../../components/ShootingStars"
+import { registerWallet, setPinOnChain } from "../../config/contracts"
 import "./Setpin.css"
 
 export default function SetPinNewWallet({ onSuccess, onBack }) {
     const [pin, setPin] = useState(["", "", "", "", ""])
     const [confirmPin, setConfirmPin] = useState(["", "", "", "", ""])
-    const [step, setStep] = useState("set")
+    const [step, setStep] = useState("username") // "username" | "set" | "confirm"
+    const [username, setUsername] = useState("")
+    const [usernameError, setUsernameError] = useState("")
     const [error, setError] = useState("")
     const [loading, setLoading] = useState(false)
     const [success, setSuccess] = useState(false)
@@ -15,18 +18,38 @@ export default function SetPinNewWallet({ onSuccess, onBack }) {
     const [btnHover, setBtnHover] = useState(false)
     const inputRefs = useRef([])
     const confirmRefs = useRef([])
+    const usernameRef = useRef(null)
 
     useEffect(() => {
-        setTimeout(() => inputRefs.current[0]?.focus(), 200)
-    }, [])
-
-    useEffect(() => {
+        if (step === "username") setTimeout(() => usernameRef.current?.focus(), 200)
+        if (step === "set") setTimeout(() => inputRefs.current[0]?.focus(), 200)
         if (step === "confirm") setTimeout(() => confirmRefs.current[0]?.focus(), 50)
     }, [step])
 
     const triggerShake = () => {
         setShake(true)
         setTimeout(() => setShake(false), 450)
+    }
+
+    const handleUsernameNext = () => {
+        const trimmed = username.trim()
+        if (!trimmed) {
+            setUsernameError("Enter a username first")
+            triggerShake()
+            return
+        }
+        if (trimmed.length < 5) {
+            setUsernameError("Minimum 5 characters required")
+            triggerShake()
+            return
+        }
+        if (trimmed.length > 12) {
+            setUsernameError("Maximum 12 characters allowed")
+            triggerShake()
+            return
+        }
+        setUsernameError("")
+        setStep("set")
     }
 
     const handleInput = (val, index, isConfirm) => {
@@ -70,7 +93,7 @@ export default function SetPinNewWallet({ onSuccess, onBack }) {
         setShowPin(false)
     }
 
-    const handleConfirm = () => {
+    const handleConfirm = async () => {
         if (confirmPin.some((d) => d === "")) {
             setError("Enter all 5 digits")
             triggerShake()
@@ -83,16 +106,32 @@ export default function SetPinNewWallet({ onSuccess, onBack }) {
             setTimeout(() => confirmRefs.current[0]?.focus(), 50)
             return
         }
+
         setLoading(true)
-        setTimeout(() => {
+        try {
+            // Random suffix for uniqueness
+            const suffix = Math.random().toString(36).substring(2, 6)
+            const finalUsername = `${username.trim()}_${suffix}`
+
+            await registerWallet(finalUsername) // Blockchain: register
+            await setPinOnChain(pin.join("")) // Blockchain: set PIN
+
             setLoading(false)
             setSuccess(true)
             setTimeout(() => onSuccess?.(), 1100)
-        }, 1400)
+        } catch (err) {
+            console.log("Error:", err)
+            setError("Transaction failed. Try again.")
+            setLoading(false)
+            triggerShake()
+        }
     }
 
     const currentArr = step === "set" ? pin : confirmPin
     const currentRefs = step === "set" ? inputRefs : confirmRefs
+
+    // Step progress
+    const stepIndex = { username: 0, set: 1, confirm: 2 }
 
     return (
         <div className="setpin-page">
@@ -112,21 +151,42 @@ export default function SetPinNewWallet({ onSuccess, onBack }) {
                         </div>
 
                         <div className="setpin-title">
-                            {step === "set" ? "Set your PIN" : "Confirm PIN"}
+                            {step === "username" && "Choose Username"}
+                            {step === "set" && "Set your PIN"}
+                            {step === "confirm" && "Confirm PIN"}
                         </div>
 
                         <div className="setpin-sub">
-                            {step === "set"
-                                ? "Choose a 5-digit PIN to secure your wallet."
-                                : "Re-enter your PIN to confirm."}
+                            {step === "username" && "Pick a unique username for your wallet."}
+                            {step === "set" && "Choose a 5-digit PIN to secure your wallet."}
+                            {step === "confirm" && "Re-enter your PIN to confirm."}
                         </div>
 
+                        {/* 3 step indicator */}
                         <div className="setpin-steps">
-                            <div className={`setpin-step ${step === "set" ? "active" : "done"}`}>
+                            <div
+                                className={`setpin-step ${step === "username" ? "active" : "done"}`}
+                            >
                                 <div
-                                    className={`setpin-step-num ${step === "set" ? "active" : "done"}`}
+                                    className={`setpin-step-num ${step === "username" ? "active" : "done"}`}
                                 >
-                                    {step === "confirm" ? "✓" : "1"}
+                                    {stepIndex[step] > 0 ? "✓" : "1"}
+                                </div>
+                                Username
+                            </div>
+                            <div className="setpin-step-line">
+                                <div
+                                    className="setpin-step-line-fill"
+                                    style={{ width: stepIndex[step] >= 1 ? "100%" : "0%" }}
+                                />
+                            </div>
+                            <div
+                                className={`setpin-step ${step === "set" ? "active" : stepIndex[step] > 1 ? "done" : ""}`}
+                            >
+                                <div
+                                    className={`setpin-step-num ${step === "set" ? "active" : stepIndex[step] > 1 ? "done" : ""}`}
+                                >
+                                    {stepIndex[step] > 1 ? "✓" : "2"}
                                 </div>
                                 Set PIN
                             </div>
@@ -140,154 +200,197 @@ export default function SetPinNewWallet({ onSuccess, onBack }) {
                                 <div
                                     className={`setpin-step-num ${step === "confirm" ? "active" : ""}`}
                                 >
-                                    2
+                                    3
                                 </div>
                                 Confirm
                             </div>
                         </div>
 
-                        {/* Circles + Eye toggle */}
-                        <div className="setpin-circles-wrapper">
-                            <div className={`setpin-circles ${shake ? "shake" : ""}`}>
-                                {currentArr.map((val, i) => (
-                                    <input
-                                        key={`${step}-${i}`}
-                                        ref={(el) => (currentRefs.current[i] = el)}
-                                        type="text"
-                                        inputMode="numeric"
-                                        maxLength={1}
-                                        value={val}
-                                        autoComplete="off"
-                                        autoCorrect="off"
-                                        autoCapitalize="off"
-                                        spellCheck="false"
-                                        className={`setpin-circle ${val ? "filled" : ""} ${showPin ? "visible" : ""}`}
-                                        onChange={(e) =>
-                                            handleInput(e.target.value, i, step === "confirm")
-                                        }
-                                        onKeyDown={(e) => handleKeyDown(e, i, step === "confirm")}
-                                    />
-                                ))}
-                            </div>
-
-                            <button
-                                className={`setpin-eye-btn ${showPin ? "active" : ""}`}
-                                onClick={() => setShowPin((v) => !v)}
-                                tabIndex={-1}
-                                aria-label={showPin ? "Hide PIN" : "Show PIN"}
+                        {/* USERNAME STEP */}
+                        {step === "username" && (
+                            <div
+                                className={`setpin-circles-wrapper ${shake ? "shake" : ""}`}
+                                style={{ flexDirection: "column", gap: "0" }}
                             >
-                                {showPin ? (
-                                    <svg
-                                        width="20"
-                                        height="20"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="1.8"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    >
-                                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-                                        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-                                        <line x1="1" y1="1" x2="23" y2="23" />
-                                    </svg>
-                                ) : (
-                                    <svg
-                                        width="20"
-                                        height="20"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="1.8"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    >
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                        <circle cx="12" cy="12" r="3" />
-                                    </svg>
+                                <input
+                                    ref={usernameRef}
+                                    type="text"
+                                    placeholder="e.g. sanskar"
+                                    value={username}
+                                    onChange={(e) => {
+                                        const val = e.target.value
+                                            .replace(/[^a-zA-Z]/g, "")
+                                            .toLowerCase()
+                                        setUsername(val)
+                                        setUsernameError("")
+                                    }}
+                                    onKeyDown={(e) => e.key === "Enter" && handleUsernameNext()}
+                                    maxLength={20}
+                                    className="setpin-username-input"
+                                />
+                                {username && (
+                                    <div className="setpin-username-preview">
+                                        // will be saved as: <span>{username}_xxxx</span>
+                                    </div>
                                 )}
-                            </button>
-                        </div>
+                            </div>
+                        )}
 
-                        {error && <div className="setpin-error">⚠ {error}</div>}
+                        {/* PIN STEPS */}
+                        {(step === "set" || step === "confirm") && (
+                            <div className="setpin-circles-wrapper">
+                                <div className={`setpin-circles ${shake ? "shake" : ""}`}>
+                                    {currentArr.map((val, i) => (
+                                        <input
+                                            key={`${step}-${i}`}
+                                            ref={(el) => (currentRefs.current[i] = el)}
+                                            type="text"
+                                            inputMode="numeric"
+                                            maxLength={1}
+                                            value={val}
+                                            autoComplete="off"
+                                            autoCorrect="off"
+                                            autoCapitalize="off"
+                                            spellCheck="false"
+                                            className={`setpin-circle ${val ? "filled" : ""} ${showPin ? "visible" : ""}`}
+                                            onChange={(e) =>
+                                                handleInput(e.target.value, i, step === "confirm")
+                                            }
+                                            onKeyDown={(e) =>
+                                                handleKeyDown(e, i, step === "confirm")
+                                            }
+                                        />
+                                    ))}
+                                </div>
+
+                                <button
+                                    className={`setpin-eye-btn ${showPin ? "active" : ""}`}
+                                    onClick={() => setShowPin((v) => !v)}
+                                    tabIndex={-1}
+                                >
+                                    {showPin ? (
+                                        <svg
+                                            width="20"
+                                            height="20"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="1.8"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                                            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                                            <line x1="1" y1="1" x2="23" y2="23" />
+                                        </svg>
+                                    ) : (
+                                        <svg
+                                            width="20"
+                                            height="20"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="1.8"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                            <circle cx="12" cy="12" r="3" />
+                                        </svg>
+                                    )}
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Errors */}
+                        {(error || usernameError) && (
+                            <div className="setpin-error">⚠ {error || usernameError}</div>
+                        )}
 
                         <div className="setpin-divider" />
 
-                        <div>
-                            {/* Main button — landing page wala hover effect */}
+                        {/* Main button */}
+                        <div
+                            className={`setpin-btn-skew ${loading ? "disabled" : ""}`}
+                            onClick={
+                                !loading
+                                    ? step === "username"
+                                        ? handleUsernameNext
+                                        : step === "set"
+                                          ? handleNext
+                                          : handleConfirm
+                                    : undefined
+                            }
+                            onMouseEnter={() => !loading && setBtnHover(true)}
+                            onMouseLeave={() => setBtnHover(false)}
+                        >
                             <div
-                                className={`setpin-btn-skew ${loading ? "disabled" : ""}`}
-                                onClick={
-                                    !loading
-                                        ? step === "set"
-                                            ? handleNext
-                                            : handleConfirm
-                                        : undefined
-                                }
-                                onMouseEnter={() => !loading && setBtnHover(true)}
-                                onMouseLeave={() => setBtnHover(false)}
+                                className="skew-fill-left"
+                                style={{
+                                    transform: btnHover
+                                        ? "translateX(-110%) skewX(-8deg)"
+                                        : "skewX(-8deg)",
+                                }}
+                            />
+                            <div
+                                className="skew-fill-right"
+                                style={{
+                                    transform: btnHover
+                                        ? "translateX(110%) skewX(-8deg)"
+                                        : "skewX(-8deg)",
+                                }}
+                            />
+                            <span
+                                className="skew-btn-text"
+                                style={{ color: btnHover ? "#fff" : "#000" }}
                             >
-                                <div
-                                    className="skew-fill-left"
-                                    style={{
-                                        transform: btnHover
-                                            ? "translateX(-110%) skewX(-8deg)"
-                                            : "skewX(-8deg)",
-                                    }}
-                                />
-                                <div
-                                    className="skew-fill-right"
-                                    style={{
-                                        transform: btnHover
-                                            ? "translateX(110%) skewX(-8deg)"
-                                            : "skewX(-8deg)",
-                                    }}
-                                />
-                                <span
-                                    className="skew-btn-text"
-                                    style={{ color: btnHover ? "#fff" : "#000" }}
-                                >
-                                    {loading ? (
-                                        <div className="setpin-loader">
-                                            <div
-                                                className="setpin-dot"
-                                                style={{ background: btnHover ? "#fff" : "#000" }}
-                                            />
-                                            <div
-                                                className="setpin-dot"
-                                                style={{ background: btnHover ? "#fff" : "#000" }}
-                                            />
-                                            <div
-                                                className="setpin-dot"
-                                                style={{ background: btnHover ? "#fff" : "#000" }}
-                                            />
-                                        </div>
-                                    ) : step === "set" ? (
-                                        "CONTINUE →"
-                                    ) : (
-                                        "ACTIVATE PIN →"
-                                    )}
-                                </span>
-                            </div>
-
-                            {/* Change PIN ghost button */}
-                            {step === "confirm" && (
-                                <div>
-                                    <button
-                                        className="setpin-btn-ghost"
-                                        onClick={() => {
-                                            setStep("set")
-                                            setPin(["", "", "", "", ""])
-                                            setConfirmPin(["", "", "", "", ""])
-                                            setError("")
-                                            setShowPin(false)
-                                        }}
-                                    >
-                                        ← CHANGE PIN
-                                    </button>
-                                </div>
-                            )}
+                                {loading ? (
+                                    <div className="setpin-loader">
+                                        <div
+                                            className="setpin-dot"
+                                            style={{ background: btnHover ? "#fff" : "#000" }}
+                                        />
+                                        <div
+                                            className="setpin-dot"
+                                            style={{ background: btnHover ? "#fff" : "#000" }}
+                                        />
+                                        <div
+                                            className="setpin-dot"
+                                            style={{ background: btnHover ? "#fff" : "#000" }}
+                                        />
+                                    </div>
+                                ) : step === "username" ? (
+                                    "NEXT →"
+                                ) : step === "set" ? (
+                                    "CONTINUE →"
+                                ) : (
+                                    "ACTIVATE PIN →"
+                                )}
+                            </span>
                         </div>
+
+                        {/* Back / Change PIN */}
+                        {step !== "username" && (
+                            <div>
+                                <button
+                                    className="setpin-btn-ghost"
+                                    onClick={() => {
+                                        if (step === "set") {
+                                            setStep("username")
+                                            setPin(["", "", "", "", ""])
+                                        }
+                                        if (step === "confirm") {
+                                            setStep("set")
+                                            setConfirmPin(["", "", "", "", ""])
+                                        }
+                                        setError("")
+                                        setShowPin(false)
+                                    }}
+                                >
+                                    ← {step === "set" ? "CHANGE USERNAME" : "CHANGE PIN"}
+                                </button>
+                            </div>
+                        )}
                     </>
                 )}
             </div>

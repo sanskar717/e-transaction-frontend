@@ -190,7 +190,7 @@ function GasSection() {
                     { left: "Gas Used × Gas Price", right: "= Gas Fee (ETH)", color: "#38bdf8" },
                     {
                         left: "Gas Fee (ETH) × ETH/USD",
-                        right: "= Gas Fee (USD)",   
+                        right: "= Gas Fee (USD)",
                         color: "#a78bfa",
                     },
                     { left: "Sum of all months", right: "= Total Spent", color: "#22c55e" },
@@ -246,7 +246,7 @@ function GasSection() {
                         color: "#a78bfa",
                     }}
                 >
-                    MAY 2025 — GAS REPORT
+                    MAY 2026 — GAS REPORT
                 </div>
 
                 {gasTxns.map((tx, i) => (

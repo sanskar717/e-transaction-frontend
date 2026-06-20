@@ -7,7 +7,7 @@ import LivePreview from "./LivePreview"
 import StatsSection from "../StatsSection"
 import FeaturesSection from "./FeaturesSection"
 import Steps from "./Steps"
-import { checkIfRegistered } from "../../config/contracts"
+import { checkIfRegistered, checkHasPinSet } from "../../config/contracts"
 import { useRouter } from "next/navigation"
 import "./landing.css"
 
@@ -87,13 +87,25 @@ export default function LandingPage() {
             const accounts = await window.ethereum.request({ method: "eth_requestAccounts" })
             setAccount(accounts[0])
             setBtnText("WALLET CONNECTED")
-            localStorage.setItem("wallet", accounts[0]) 
+            localStorage.setItem("wallet", accounts[0])
 
-            const isRegistered = await checkIfRegistered(accounts[0])
-            if (!isRegistered) {
-                setShowRegisterModal(true)
+            try {
+                const isRegistered = await checkIfRegistered(accounts[0])
+                if (!isRegistered) {
+                    setShowRegisterModal(true)
+                } else {
+                    const hasPinSet = await checkHasPinSet(accounts[0])
+                    if (hasPinSet) {
+                        router.push("/enterpin")
+                    } else {
+                        router.push("/setpin")
+                    }
+                }
+            } catch (regErr) {
+                console.log("checkIfRegistered error:", regErr)
             }
         } catch (e) {
+            console.log("wallet connect error:", e)
             alert("Connection cancel")
         }
         setConnecting(false)
@@ -109,7 +121,7 @@ export default function LandingPage() {
         if (showRegisterModal) {
             document.body.style.overflow = "hidden"
         } else {
-            document.body.style.overflow = "unset" 
+            document.body.style.overflow = "unset"
         }
     }, [showRegisterModal])
 
@@ -159,8 +171,8 @@ export default function LandingPage() {
                         <div
                             onClick={() => {
                                 setShowRegisterModal(false)
-                                router.push("/setpin")
-                                disconnect()
+                                // router.push("/setpin")
+                                // disconnect()
                             }}
                             style={{
                                 position: "absolute",
@@ -595,7 +607,7 @@ export default function LandingPage() {
                             lineHeight: 1.8,
                         }}
                     >
-                        Free. Private. No data sold.
+                        Private. No data sold.
                         <br />
                         Just your wallet's real on-chain picture.
                     </div>
@@ -662,6 +674,60 @@ export default function LandingPage() {
                             {btnText}
                         </span>
                     </div>
+                    {/* GET STARTED button */}
+                    {account && (
+                        <div
+                            // onClick={() => router.push("/enterpin")}
+                            onClick={async () => {
+                                const saved = localStorage.getItem("wallet")
+                                if (!saved) return
+                                try {
+                                    const isRegistered = await checkIfRegistered(saved)
+                                    if (!isRegistered) {
+                                        setShowRegisterModal(true)
+                                    } else {
+                                        const hasPinSet = await checkHasPinSet(saved)
+                                        if (hasPinSet) {
+                                            router.push("/enterpin")
+                                        } else {
+                                            router.push("/setpin")
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.log("GET STARTED error:", e)
+                                }
+                            }}
+                            style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                padding: "16px 48px",
+                                border: "2px solid #38bdf8",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                fontSize: "14px",
+                                fontWeight: "900",
+                                letterSpacing: "2px",
+                                color: "#38bdf8",
+                                fontFamily: "'Courier New', monospace",
+                                marginLeft: "16px",
+                                userSelect: "none",
+                                transition: "all 0.3s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = "transparent"
+                                e.currentTarget.style.color = "#38bdf8"
+                                e.currentTarget.style.boxShadow = "0 0 20px rgba(56,189,248,0.3)"
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = "transparent"
+                                e.currentTarget.style.color = "#38bdf8"
+                                e.currentTarget.style.boxShadow = "none"
+                            }}
+                        >
+                            GET STARTED →
+                        </div>
+                    )}
                 </div>
             </AnimateIn>
         </div>

@@ -1,0 +1,81 @@
+"use client"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import ShootingStars from "../../components/ShootingStars"
+import { checkIfRegistered, checkHasPinSet } from "../../config/contracts"
+import Dashboard from "./dashboard"
+
+export default function WalletPage() {
+    const router = useRouter()
+    const [checking, setChecking] = useState(true)
+
+    useEffect(() => {
+        const check = async () => {
+            const pinVerified = sessionStorage.getItem("pinVerified")
+            if (!pinVerified) {
+                router.push("/enterpin")
+                return
+            }
+
+            if (!window.ethereum) {
+                router.push("/")
+                return
+            }
+
+            const accounts = await window.ethereum.request({ method: "eth_accounts" })
+
+            if (!accounts || accounts.length === 0) {
+                router.push("/")
+                return
+            }
+
+            const address = accounts[0]
+
+            try {
+                const isRegistered = await checkIfRegistered(address)
+                if (!isRegistered) {
+                    router.push("/")
+                    return
+                }
+                const hasPinSet = await checkHasPinSet(address)
+                if (!hasPinSet) {
+                    router.push("/setpin")
+                    return
+                }
+                setChecking(false)
+            } catch (e) {
+                console.log(e)
+                router.push("/")
+            }
+        }
+        check()
+    }, [])
+
+    if (checking) {
+        return (
+            <div
+                style={{
+                    background: "#000",
+                    minHeight: "100vh",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "rgba(255,255,255,0.3)",
+                    fontSize: "12px",
+                    letterSpacing: "3px",
+                    fontFamily: "'Courier New', monospace",
+                }}
+            >
+                <ShootingStars />
+                VERIFYING...
+            </div>
+        )
+    }
+
+    return (
+        <main style={{ background: "#000", minHeight: "100vh" }}>
+            <ShootingStars></ShootingStars>
+            <Dashboard />
+        </main>
+    )
+}
