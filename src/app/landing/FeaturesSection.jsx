@@ -140,68 +140,68 @@ function FeatureCard({ feature }) {
 
 export default function FeaturesSection() {
     return (
+        <div
+            style={{
+                width: "100%",
+                maxWidth: "1100px",
+                margin: "100px auto 0",
+                padding: "0 40px",
+                position: "relative",
+                zIndex: 2,
+                fontFamily: "'Courier New', monospace",
+            }}
+        >
             <div
                 style={{
-                    width: "100%",
-                    maxWidth: "1100px",
-                    margin: "100px auto 0",
-                    padding: "0 40px",
-                    position: "relative",
-                    zIndex: 2,
-                    fontFamily: "'Courier New', monospace",
+                    fontSize: "10px",
+                    letterSpacing: "4px",
+                    color: "#38bdf8",
+                    marginBottom: "16px",
                 }}
             >
-                <div
-                    style={{
-                        fontSize: "10px",
-                        letterSpacing: "4px",
-                        color: "#38bdf8",
-                        marginBottom: "16px",
-                    }}
-                >
-                    // PLATFORM FEATURES
-                </div>
-
-                <div
-                    style={{
-                        fontSize: "clamp(28px, 4vw, 48px)",
-                        fontWeight: "900",
-                        color: "#ffffff",
-                        letterSpacing: "-1px",
-                        marginBottom: "12px",
-                        lineHeight: 1.2,
-                    }}
-                >
-                    What Does This Platform Do?
-                </div>
-
-                <div
-                    style={{
-                        fontSize: "14px",
-                        color: "rgba(255,255,255,0.65)",
-                        marginBottom: "48px",
-                        lineHeight: "1.8",
-                        maxWidth: "480px",
-                        fontFamily: "'Inter', sans-serif",
-                        fontWeight: "400",
-                        letterSpacing: "0.3px",
-                    }}
-                >
-                    Register your wallet once — everything else is automatic. Real blockchain data,
-                    real-time USD conversion.
-                </div>
-
-                <div
-                    style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(3, 1fr)",
-                        gap: "16px",
-                    }}
-                >
-                    {features.map((f, i) => (
-                        <FeatureCard key={i} feature={f} />
-                    ))}
-                </div>
+                // PLATFORM FEATURES
             </div>
+
+            <div
+                style={{
+                    fontSize: "clamp(28px, 4vw, 48px)",
+                    fontWeight: "900",
+                    color: "#ffffff",
+                    letterSpacing: "-1px",
+                    marginBottom: "12px",
+                    lineHeight: 1.2,
+                }}
+            >
+                What Does This Platform Do?
+            </div>
+
+            <div
+                style={{
+                    fontSize: "14px",
+                    color: "rgba(255,255,255,0.65)",
+                    marginBottom: "48px",
+                    lineHeight: "1.8",
+                    maxWidth: "480px",
+                    fontFamily: "'Inter', sans-serif",
+                    fontWeight: "400",
+                    letterSpacing: "0.3px",
+                }}
+            >
+                Register your wallet once — everything else is automatic. Real blockchain data,
+                real-time USD conversion.
+            </div>
+
+            <div
+                style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: "16px",
+                }}
+            >
+                {features.map((f, i) => (
+                    <FeatureCard key={i} feature={f} />
+                ))}
+            </div>
+        </div>
     )
 }

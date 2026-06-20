@@ -99,7 +99,7 @@ export default function EnterPinPage() {
         try {
             const isValid = await verifyPinOnChain(pin.join(""))
             if (isValid) {
-                sessionStorage.setItem("pinVerified", "true") // ← yahan set karo
+                sessionStorage.setItem("pinVerified", "true")
                 router.push("/wallet")
             } else {
                 setError("Wrong PIN — try again")

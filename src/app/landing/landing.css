@@ -35,7 +35,7 @@
     font-size: 13px;
     padding: 14px 36px;
     background: #000;
-    color: white; 
+    color: white;
     text-transform: uppercase;
     position: relative;
     border-radius: 100px;
@@ -49,7 +49,7 @@
 }
 
 .how-btn:hover {
-    color: hsl(250, 66%, 61%); 
+    color: hsl(250, 66%, 61%);
 }
 
 .how-btn::before,

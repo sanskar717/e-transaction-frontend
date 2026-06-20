@@ -171,8 +171,6 @@ export default function LandingPage() {
                         <div
                             onClick={() => {
                                 setShowRegisterModal(false)
-                                // router.push("/setpin")
-                                // disconnect()
                             }}
                             style={{
                                 position: "absolute",
@@ -520,7 +518,6 @@ export default function LandingPage() {
                         </div>
 
                         {/* BUTTON 2 — Neon Pill */}
-                        {/* <button className="how-btn">HOW IT WORKS</button> */}
                         <button className="how-btn" onClick={() => setShowHowItWorks(true)}>
                             HOW IT WORKS
                         </button>
@@ -677,7 +674,6 @@ export default function LandingPage() {
                     {/* GET STARTED button */}
                     {account && (
                         <div
-                            // onClick={() => router.push("/enterpin")}
                             onClick={async () => {
                                 const saved = localStorage.getItem("wallet")
                                 if (!saved) return

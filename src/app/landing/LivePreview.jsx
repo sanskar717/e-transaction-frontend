@@ -187,17 +187,19 @@ function PreviewCard({ s }) {
                 boxShadow: hovered ? `0 0 0 1px ${s.color}` : "none",
             }}
         >
-            <div style={{
-                position: "absolute",
-                top: hovered ? "-4px" : "0px",
-                left: 0,
-                width: "100%",
-                height: "2px",
-                background: s.color,
-                opacity: hovered ? 0 : 1,
-                transition: "top 0.4s ease, opacity 0.4s ease",
-            }} />
-            
+            <div
+                style={{
+                    position: "absolute",
+                    top: hovered ? "-4px" : "0px",
+                    left: 0,
+                    width: "100%",
+                    height: "2px",
+                    background: s.color,
+                    opacity: hovered ? 0 : 1,
+                    transition: "top 0.4s ease, opacity 0.4s ease",
+                }}
+            />
+
             <div
                 style={{
                     fontSize: "clamp(20px,2.5vw,28px)",
