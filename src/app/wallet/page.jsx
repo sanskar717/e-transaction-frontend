@@ -3,11 +3,13 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import ShootingStars from "../../components/ShootingStars"
 import { checkIfRegistered, checkHasPinSet } from "../../config/contracts"
+import Navbar from "./walletNavbar"
 import Dashboard from "./dashboard"
 
 export default function WalletPage() {
     const router = useRouter()
     const [checking, setChecking] = useState(true)
+    const [activeTab, setActiveTab] = useState("transactions")
 
     useEffect(() => {
         const check = async () => {
@@ -16,21 +18,16 @@ export default function WalletPage() {
                 router.push("/enterpin")
                 return
             }
-
             if (!window.ethereum) {
                 router.push("/")
                 return
             }
-
             const accounts = await window.ethereum.request({ method: "eth_accounts" })
-
             if (!accounts || accounts.length === 0) {
                 router.push("/")
                 return
             }
-
             const address = accounts[0]
-
             try {
                 const isRegistered = await checkIfRegistered(address)
                 if (!isRegistered) {
@@ -73,9 +70,10 @@ export default function WalletPage() {
     }
 
     return (
-        <main style={{ background: "#000", minHeight: "100vh" }}>
-            <ShootingStars></ShootingStars>
-            <Dashboard />
+        <main style={{ background: "#000", minHeight: "100vh", paddingTop: "120px" }}>
+            <ShootingStars />
+            <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+            <Dashboard activeTab={activeTab} />
         </main>
     )
 }

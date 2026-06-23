@@ -1,27 +1,28 @@
 "use client"
-import { useState, useEffect } from "react"
-import Navbar from "./walletNavbar"
+import { useState } from "react"
 
 export default function Dashboard() {
-    const [account, setAccount] = useState(null)
-
-    useEffect(() => {
-        const saved = localStorage.getItem("wallet")
-        if (saved) {
-            setAccount(saved)
-        }
-    }, [])
+    const [activeTab, setActiveTab] = useState("transactions")
 
     return (
         <div
             style={{
+                background: "#000",
                 minHeight: "100vh",
-                color: "#f1f5f9",
                 fontFamily: "'Courier New', monospace",
-                position: "relative",
+                paddingTop: "120px", // navbar (64px top + 44px tabs)
             }}
         >
-            <Navbar account={account} />
+            <div
+                style={{
+                    padding: "40px",
+                    color: "rgba(255,255,255,0.3)",
+                    fontSize: "11px",
+                    letterSpacing: "3px",
+                }}
+            >
+                // {activeTab.toUpperCase()} — coming soon
+            </div>
         </div>
     )
 }

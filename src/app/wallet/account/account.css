@@ -1,0 +1,835 @@
+/* ─── FONTS ─── */
+@import url("https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Orbitron:wght@400;700;900&display=swap");
+
+/* ─── KEYFRAMES ─── */
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(28px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@keyframes pulseRed {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(20, 184, 166, 0);
+    }
+    50% {
+        box-shadow: 0 0 24px 3px rgba(20, 184, 166, 0.14);
+    }
+}
+@keyframes glowOrange {
+    0%,
+    100% {
+        text-shadow: 0 0 18px rgba(255, 107, 53, 0.5);
+    }
+    50% {
+        text-shadow:
+            0 0 40px rgba(255, 107, 53, 0.95),
+            0 0 70px rgba(255, 107, 53, 0.4);
+    }
+}
+@keyframes greenPulse {
+    0%,
+    100% {
+        box-shadow: 0 0 6px #22c55e;
+    }
+    50% {
+        box-shadow:
+            0 0 14px #22c55e,
+            0 0 28px rgba(34, 197, 94, 0.4);
+    }
+}
+@keyframes scanline {
+    0% {
+        transform: translateY(-100%);
+    }
+    100% {
+        transform: translateY(100vh);
+    }
+}
+@keyframes borderRotate {
+    0% {
+        background-position: 0% 50%;
+    }
+    100% {
+        background-position: 200% 50%;
+    }
+}
+@keyframes flickerIn {
+    0% {
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.9;
+    }
+    12% {
+        opacity: 0.2;
+    }
+    20% {
+        opacity: 1;
+    }
+    22% {
+        opacity: 0.4;
+    }
+    30% {
+        opacity: 1;
+    }
+}
+@keyframes shimmer {
+    0% {
+        background-position: -200% center;
+    }
+    100% {
+        background-position: 200% center;
+    }
+}
+@keyframes avatarPulse {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 107, 53, 0);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(255, 107, 53, 0.15);
+    }
+}
+@keyframes typeIn {
+    from {
+        width: 0;
+    }
+    to {
+        width: 100%;
+    }
+}
+@keyframes blink {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
+}
+
+/* ─── BASE ─── */
+.acc-root {
+    font-family: "Space Mono", monospace;
+    position: relative;
+    z-index: 1;
+    padding-top: 120px;
+    padding-bottom: 80px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.acc-grid {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 40px;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+/* ─── PANEL ANIMATIONS ─── */
+.acc-panel {
+    animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.acc-panel:nth-child(2) {
+    animation-delay: 0.08s;
+}
+.acc-panel:nth-child(3) {
+    animation-delay: 0.16s;
+}
+
+/* ─── LEFT COLUMN ─── */
+.left-col {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* ─── IDENTITY CARD ─── */
+.identity-card {
+    background: rgba(255, 255, 255, 0.015);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 30px 26px;
+    position: relative;
+    overflow: hidden;
+    transition:
+        border-color 0.35s,
+        background 0.35s,
+        box-shadow 0.35s;
+}
+.identity-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    padding: 1px;
+    background: linear-gradient(90deg, transparent, #ff6b35, transparent, #ff6b35aa, transparent);
+    background-size: 200% 100%;
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.4s;
+    animation: borderRotate 2.5s linear infinite;
+    pointer-events: none;
+}
+.identity-card:hover::before {
+    opacity: 1;
+}
+.identity-card:hover {
+    border-color: transparent;
+    background: linear-gradient(145deg, rgba(255, 107, 53, 0.14) 0%, rgba(0, 0, 0, 0) 65%);
+    box-shadow:
+        0 0 40px rgba(255, 107, 53, 0.18),
+        inset 0 0 40px rgba(255, 107, 53, 0.04);
+}
+.identity-card:hover .card-label {
+    color: #ff6b35;
+    animation: flickerIn 0.4s ease both;
+}
+.identity-card:hover .identity-name {
+    color: #ff6b35;
+    animation: glowOrange 2s ease-in-out infinite;
+}
+.identity-card:hover .identity-sub {
+    color: #ffffff;
+}
+.identity-card:hover .identity-date {
+    color: #ffffff;
+}
+.identity-card:hover .identity-avatar {
+    color: #ff6b35;
+    background: rgba(255, 107, 53, 0.2);
+    border-color: rgba(255, 107, 53, 0.3);
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
+    animation: avatarPulse 2s ease-in-out infinite;
+}
+
+.identity-corner {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 72px;
+    height: 72px;
+    background: linear-gradient(135deg, rgba(255, 107, 53, 0.22), transparent);
+    border-radius: 0 16px 0 72px;
+    opacity: 0;
+    transition: opacity 0.35s;
+}
+.identity-card:hover .identity-corner {
+    opacity: 1.6;
+}
+
+.identity-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.22);
+    margin-bottom: 22px;
+    font-family: "Orbitron", monospace;
+    transition:
+        color 0.3s,
+        border-color 0.3s,
+        background 0.3s,
+        box-shadow 0.3s;
+}
+
+.identity-name {
+    font-family: "Orbitron", monospace;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: rgba(255, 255, 255, 0.25);
+    margin-bottom: 6px;
+    word-break: break-all;
+    text-shadow: none;
+    transition:
+        color 0.3s,
+        text-shadow 0.3s;
+}
+.identity-sub {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.18);
+    letter-spacing: 2px;
+    margin-bottom: 26px;
+    transition: color 0.3s;
+}
+.identity-reg {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.2);
+    letter-spacing: 3px;
+    margin-bottom: 5px;
+}
+.identity-date {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.45);
+    letter-spacing: 1px;
+    transition: color 0.3s;
+}
+
+/* ─── STATUS PILL ─── */
+.status-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 18px;
+    background: rgba(255, 255, 255, 0.015);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    transition:
+        border-color 0.3s,
+        background 0.3s,
+        box-shadow 0.3s;
+    cursor: default;
+}
+.status-pill:hover {
+    border-color: rgba(34, 197, 94, 0.55);
+    background: rgba(34, 197, 94, 0.09);
+    box-shadow: 0 0 24px rgba(34, 197, 94, 0.18);
+}
+.status-pill:hover .status-dot {
+    animation: greenPulse 1.2s ease-in-out infinite;
+}
+.status-pill:hover .status-text {
+    color: #22c55e;
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.24);
+    box-shadow: none;
+    flex-shrink: 0;
+    transition:
+        background 0.3s,
+        box-shadow 0.3s;
+}
+.status-pill:hover .status-dot {
+    background: #22c55e;
+    box-shadow: 0 0 8px #22c55e;
+}
+.status-text {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: rgba(255, 255, 255, 0.28);
+    font-family: "Space Mono", monospace;
+    transition: color 0.3s;
+}
+
+/* ─── RIGHT COLUMN ─── */
+.right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ─── SHARED CARD BASE ─── */
+.field-card {
+    border-radius: 14px;
+    padding: 24px 30px;
+    transition:
+        border-color 0.3s,
+        background 0.3s,
+        box-shadow 0.3s;
+}
+
+/* ─── WALLET ADDRESS CARD ─── */
+.wallet-card {
+    background: rgba(255, 255, 255, 0.012);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+.wallet-card::after {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -60%;
+    width: 40%;
+    height: 200%;
+    background: linear-gradient(to right, transparent, rgba(56, 189, 248, 0.06), transparent);
+    transform: skewX(-20deg);
+    transition: none;
+    opacity: 0;
+}
+.wallet-card:hover::after {
+    opacity: 1;
+    left: 130%;
+    transition:
+        left 0.65s ease,
+        opacity 0.1s;
+}
+.wallet-card:hover {
+    border-color: rgba(56, 189, 248, 0.55);
+    background: rgba(56, 189, 248, 0.07);
+    box-shadow: 0 0 30px rgba(56, 189, 248, 0.12);
+}
+.wallet-card:hover .wallet-addr {
+    color: #fff;
+    text-shadow:
+        0 0 12px rgba(56, 189, 248, 0.5),
+        0 0 30px rgba(56, 189, 248, 0.25);
+}
+.wallet-card:hover .card-label {
+    color: #38bdf8;
+    animation: flickerIn 0.35s ease both;
+}
+
+.wallet-addr {
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    color: rgba(255, 255, 255, 0.45);
+    word-break: break-all;
+    line-height: 1.8;
+    flex: 1;
+    transition:
+        color 0.3s,
+        text-shadow 0.3s;
+    font-family: "Space Mono", monospace;
+}
+
+/* ─── USERNAME CARD ─── */
+.username-card {
+    background: rgba(255, 255, 255, 0.012);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+.username-card::after {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -60%;
+    width: 40%;
+    height: 200%;
+    background: linear-gradient(to right, transparent, rgba(167, 139, 250, 0.07), transparent);
+    transform: skewX(-20deg);
+    opacity: 0;
+}
+.username-card:hover::after {
+    opacity: 1;
+    left: 130%;
+    transition:
+        left 0.65s ease,
+        opacity 0.1s;
+}
+.username-card:hover {
+    border-color: rgba(167, 139, 250, 0.55);
+    background: rgba(167, 139, 250, 0.07);
+    box-shadow: 0 0 30px rgba(167, 139, 250, 0.12);
+}
+.username-card:hover .card-label {
+    color: #ffffff;
+    animation: flickerIn 0.35s ease both;
+}
+.username-card:hover .section-title {
+    color: #ffffff;
+    border-bottom-color: rgba(167, 139, 250, 0.2);
+}
+.username-card:hover .username-val {
+    color: #ff6b35;
+    text-shadow: 0 0 28px rgba(255, 107, 53, 0.8);
+}
+
+.username-val {
+    font-family: "Orbitron", monospace;
+    font-size: 17px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: rgba(255, 255, 255, 0.28);
+    margin-bottom: 22px;
+    text-shadow: none;
+    transition:
+        color 0.3s,
+        text-shadow 0.3s;
+}
+
+/* ─── DANGER CARD ─── */
+.danger-card {
+    background: rgba(255, 255, 255, 0.012);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 28px 32px;
+    animation: none;
+    transition:
+        border-color 0.3s,
+        background 0.3s,
+        box-shadow 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+.danger-card::after {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -60%;
+    width: 40%;
+    height: 200%;
+    background: linear-gradient(to right, transparent, rgba(20, 184, 166, 0.07), transparent);
+    transform: skewX(-20deg);
+    opacity: 0;
+}
+.danger-card:hover::after {
+    opacity: 1;
+    left: 130%;
+    transition:
+        left 0.65s ease,
+        opacity 0.1s;
+}
+.danger-card:hover {
+    border-color: rgba(20, 184, 166, 0.55);
+    background: rgba(20, 184, 166, 0.065);
+    box-shadow: 0 0 30px rgba(20, 184, 166, 0.13);
+}
+.danger-card:hover .danger-label {
+    color: #14b8a6;
+    animation: flickerIn 0.35s ease both;
+}
+.danger-card:hover .danger-desc {
+    color: #ffffff;
+}
+
+/* ─── SUB TILES ─── */
+.tracking-tile {
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.012);
+    transition:
+        border-color 0.3s,
+        background 0.3s,
+        box-shadow 0.3s;
+}
+.tracking-tile:hover {
+    border-color: rgba(251, 191, 36, 0.5);
+    background: rgba(251, 191, 36, 0.07);
+    box-shadow: 0 0 22px rgba(251, 191, 36, 0.15);
+}
+.tracking-tile:hover .tile-label {
+    color: #fbbf24;
+    animation: flickerIn 0.3s ease both;
+}
+.tracking-tile:hover .tile-desc {
+    color: #ffffff;
+}
+
+.remove-tile {
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.012);
+    transition:
+        border-color 0.3s,
+        background 0.3s,
+        box-shadow 0.3s;
+}
+.remove-tile:hover {
+    border-color: rgba(20, 184, 166, 0.5);
+    background: rgba(20, 184, 166, 0.07);
+    box-shadow: 0 0 22px rgba(20, 184, 166, 0.18);
+}
+.remove-tile:hover .tile-label {
+    color: #14b8a6;
+    animation: flickerIn 0.3s ease both;
+}
+.remove-tile:hover .tile-desc {
+    color: #ffffff;
+}
+.remove-tile.confirming {
+    border-color: rgba(20, 184, 166, 0.5);
+    background: rgba(20, 184, 166, 0.07);
+}
+/* ─── LABELS ─── */
+.card-label {
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: rgba(255, 255, 255, 0.25);
+    font-family: "Space Mono", monospace;
+    margin-bottom: 12px;
+    transition: color 0.3s;
+}
+.section-title {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: rgba(255, 255, 255, 0.4);
+    font-family: "Space Mono", monospace;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition:
+        color 0.3s,
+        border-bottom-color 0.3s;
+}
+.tile-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: rgba(255, 255, 255, 0.3);
+    font-family: "Space Mono", monospace;
+    margin-bottom: 9px;
+    transition: color 0.3s;
+}
+.tile-desc {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.22);
+    line-height: 1.8;
+    margin-bottom: 14px;
+    font-family: "Space Mono", monospace;
+    transition: color 0.3s;
+}
+.danger-label {
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: rgba(255, 255, 255, 0.28);
+    font-family: "Space Mono", monospace;
+    margin-bottom: 10px;
+    transition: color 0.3s;
+}
+.danger-desc {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.22);
+    line-height: 1.9;
+    letter-spacing: 0.3px;
+    font-family: "Space Mono", monospace;
+    transition: color 0.3s;
+}
+
+/* ─── BUTTONS ─── */
+.copy-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.35);
+    font-family: "Space Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.copy-btn:hover {
+    background: rgba(56, 189, 248, 0.12);
+    border-color: #38bdf8;
+    color: #38bdf8;
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.2);
+}
+
+.update-input {
+    flex: 1;
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    color: #fff;
+    outline: none;
+    font-family: "Space Mono", monospace;
+    font-size: 13px;
+    letter-spacing: 2px;
+    transition: all 0.25s;
+}
+.update-input::placeholder {
+    color: rgba(255, 255, 255, 0.18);
+}
+.update-input:focus {
+    border-color: rgba(167, 139, 250, 0.6);
+    background: rgba(167, 139, 250, 0.05);
+    box-shadow:
+        0 0 0 1px rgba(167, 139, 250, 0.2),
+        0 0 18px rgba(167, 139, 250, 0.1);
+}
+
+.save-btn {
+    padding: 14px 24px;
+    border-radius: 8px;
+    border: 1px solid rgba(167, 139, 250, 0.35);
+    background: rgba(167, 139, 250, 0.07);
+    color: #a78bfa;
+    font-family: "Space Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: all 0.25s;
+    white-space: nowrap;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+}
+.save-btn::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.15), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.45s ease;
+}
+.save-btn:hover:not(:disabled)::after {
+    transform: translateX(100%);
+}
+.save-btn:hover:not(:disabled) {
+    background: rgba(167, 139, 250, 0.16);
+    border-color: #a78bfa;
+    color: #fff;
+    box-shadow: 0 0 22px rgba(167, 139, 250, 0.3);
+}
+.save-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.stop-btn {
+    width: 100%;
+    padding: 15px 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.28);
+    font-family: "Space Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+}
+.stop-btn::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.12), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.45s ease;
+}
+.stop-btn:hover:not(:disabled)::after {
+    transform: translateX(100%);
+}
+.stop-btn:hover:not(:disabled) {
+    background: rgba(251, 191, 36, 0.1);
+    border-color: #fbbf24;
+    color: #fbbf24;
+    box-shadow: 0 0 22px rgba(251, 191, 36, 0.28);
+}
+
+.remove-btn {
+    width: 100%;
+    padding: 15px 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.28);
+    font-family: "Space Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+}
+.remove-btn::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(20, 184, 166, 0.14), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.45s ease;
+}
+.remove-btn:hover:not(:disabled)::after {
+    transform: translateX(100%);
+}
+.remove-btn:hover:not(:disabled) {
+    background: rgba(20, 184, 166, 0.12);
+    border-color: #14b8a6;
+    color: #14b8a6;
+    box-shadow: 0 0 30px rgba(20, 184, 166, 0.35);
+}
+.remove-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.cancel-txt {
+    margin-top: 8px;
+    width: 100%;
+    padding: 9px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.2);
+    font-family: "Space Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: color 0.2s;
+    text-align: center;
+    display: block;
+}
+.cancel-txt:hover {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* ─── MESSAGES ─── */
+.msg-success {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #22c55e;
+    margin-top: 10px;
+}
+.msg-error {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #14b8a6;
+    margin-top: 10px;
+}
+
+.confirm-banner {
+    padding: 13px 16px;
+    border: 1px solid rgba(20, 184, 166, 0.35);
+    border-radius: 8px;
+    background: rgba(20, 184, 166, 0.07);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #14b8a6;
+    margin-top: 14px;
+    text-align: center;
+    font-family: "Space Mono", monospace;
+}
+
+/* ─── DIVIDER ─── */
+.card-divider {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    margin: 18px 0;
+}
+
+/* ─── LOADING SCREEN ─── */
+.loading-screen {
+    background: #000;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 12px;
+    letter-spacing: 4px;
+    font-family: "Space Mono", monospace;
+}

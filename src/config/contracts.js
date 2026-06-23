@@ -73,3 +73,22 @@ export async function verifyPinOnChain(pin) {
     const pinHash = hashPin(pin)
     return await contract.verifyPin(pinHash)
 }
+
+export async function getUserProfile(address) {
+    const contract = await getWalletRegistryContract()
+    return await contract.getUserProfile(address)
+}
+
+export async function updateUserName(newUsername) {
+    const contract = await getWalletRegistryContract()
+    const tx = await contract.updateUserName(newUsername)
+    await tx.wait()
+    return tx
+}
+
+export async function removeWallet() {
+    const contract = await getWalletRegistryContract()
+    const tx = await contract.removeWallet()
+    await tx.wait()
+    return tx
+}

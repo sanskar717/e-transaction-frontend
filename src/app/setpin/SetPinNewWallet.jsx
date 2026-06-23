@@ -19,6 +19,7 @@ export default function SetPinNewWallet({ onSuccess, onBack }) {
     const inputRefs = useRef([])
     const confirmRefs = useRef([])
     const usernameRef = useRef(null)
+    const [previewSuffix, setPreviewSuffix] = useState("")
 
     useEffect(() => {
         if (step === "username") setTimeout(() => usernameRef.current?.focus(), 200)
@@ -109,8 +110,11 @@ export default function SetPinNewWallet({ onSuccess, onBack }) {
 
         setLoading(true)
         try {
-            // Random suffix for uniqueness
-            const suffix = Math.random().toString(36).substring(2, 6)
+            const chars = "0123456789!@#$%^&*"
+            const suffix = Array.from(
+                { length: 4 },
+                () => chars[Math.floor(Math.random() * chars.length)],
+            ).join("")
             const finalUsername = `${username.trim()}_${suffix}`
 
             await registerWallet(finalUsername) // Blockchain: register
@@ -118,7 +122,10 @@ export default function SetPinNewWallet({ onSuccess, onBack }) {
 
             setLoading(false)
             setSuccess(true)
-            setTimeout(() => onSuccess?.(), 1100)
+            setTimeout(() => {
+                sessionStorage.setItem("pinVerified", "true")
+                onSuccess?.()
+            }, 1100)
         } catch (err) {
             console.log("Error:", err)
             setError("Transaction failed. Try again.")
@@ -218,11 +225,15 @@ export default function SetPinNewWallet({ onSuccess, onBack }) {
                                     placeholder="e.g. sanskar"
                                     value={username}
                                     onChange={(e) => {
-                                        const val = e.target.value
-                                            .replace(/[^a-zA-Z]/g, "")
-                                            .toLowerCase()
+                                        const val = e.target.value.replace(/[^a-zA-Z]/g, "")
                                         setUsername(val)
                                         setUsernameError("")
+                                        const chars = "0123456789!@#$%^&*"
+                                        const s = Array.from(
+                                            { length: 4 },
+                                            () => chars[Math.floor(Math.random() * chars.length)],
+                                        ).join("")
+                                        setPreviewSuffix(s)
                                     }}
                                     onKeyDown={(e) => e.key === "Enter" && handleUsernameNext()}
                                     maxLength={20}
@@ -230,7 +241,10 @@ export default function SetPinNewWallet({ onSuccess, onBack }) {
                                 />
                                 {username && (
                                     <div className="setpin-username-preview">
-                                        // will be saved as: <span>{username}_xxxx</span>
+                                        will be saved as:{" "}
+                                        <span>
+                                            {username}_{previewSuffix}
+                                        </span>
                                     </div>
                                 )}
                             </div>
