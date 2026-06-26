@@ -18,6 +18,7 @@ export default function AccountPage() {
     const [profile, setProfile] = useState(null)
     const [address, setAddress] = useState(null)
     const [newUsername, setNewUsername] = useState("")
+    const [previewSuffix, setPreviewSuffix] = useState("")
     const [usernameLoading, setUsernameLoading] = useState(false)
     const [removeLoading, setRemoveLoading] = useState(false)
     const [usernameMsg, setUsernameMsg] = useState(null)
@@ -67,14 +68,24 @@ export default function AccountPage() {
 
     const handleUpdateUsername = async () => {
         if (!newUsername.trim()) return
+        if (newUsername.trim().length < 5) {
+            setUsernameMsg({ type: "error", text: "✕ MINIMUM 5 CHARACTERS REQUIRED" })
+            return
+        }
+        if (newUsername.trim().length > 12) {
+            setUsernameMsg({ type: "error", text: "✕ MAXIMUM 12 CHARACTERS ALLOWED" })
+            return
+        }
         setUsernameLoading(true)
         setUsernameMsg(null)
         try {
-            await updateUserName(newUsername.trim())
+            const finalUsername = `${newUsername.trim()}_${previewSuffix}`
+            await updateUserName(finalUsername)
             setUsernameMsg({ type: "success", text: "✓ USERNAME UPDATED" })
             const p = await getUserProfile(address)
             setProfile(p)
             setNewUsername("")
+            setPreviewSuffix("")
         } catch (e) {
             console.log(e)
             setUsernameMsg({ type: "error", text: "✕ TRANSACTION FAILED" })
@@ -91,7 +102,6 @@ export default function AccountPage() {
         setRemoveMsg(null)
         try {
             await removeWallet()
-            localStorage.removeItem("wallet")
             sessionStorage.removeItem("pinVerified")
             router.push("/")
         } catch (e) {
@@ -127,7 +137,6 @@ export default function AccountPage() {
 
     return (
         <>
-            {/* ── Fixed background ── */}
             <div
                 style={{
                     position: "fixed",
@@ -141,14 +150,21 @@ export default function AccountPage() {
             >
                 <ShootingStars />
             </div>
-
-            <Navbar activeTab="account" setActiveTab={() => {}} />
+            <Navbar
+                activeTab="account"
+                setActiveTab={(tab) => {
+                    if (tab === "transactions") router.push("/wallet")
+                    else if (tab === "sent") router.push("/wallet/sent")
+                    else if (tab === "received") router.push("/wallet/received")
+                    else if (tab === "gas") router.push("/wallet/gas")
+                    else if (tab === "subscription") router.push("/wallet/subscription")
+                }}
+            />
 
             <div className="acc-root" style={{ position: "relative", zIndex: 1 }}>
                 <div className="acc-grid">
                     {/* ════ LEFT ════ */}
                     <div className="left-col acc-panel">
-                        {/* Identity Card */}
                         <div className="identity-card">
                             <div className="identity-corner" />
                             <div className="card-label">// IDENTITY</div>
@@ -163,7 +179,6 @@ export default function AccountPage() {
                             </div>
                         </div>
 
-                        {/* Status Pill */}
                         <div className="status-pill">
                             <div className="status-dot" />
                             <span className="status-text">WALLET ACTIVE</span>
@@ -172,7 +187,7 @@ export default function AccountPage() {
 
                     {/* ════ RIGHT ════ */}
                     <div className="right-col acc-panel">
-                        {/* Wallet Address — cyan */}
+                        {/* Wallet Address */}
                         <div className="field-card wallet-card">
                             <div className="card-label">WALLET ADDRESS</div>
                             <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
@@ -183,7 +198,7 @@ export default function AccountPage() {
                             </div>
                         </div>
 
-                        {/* Username — purple */}
+                        {/* Username */}
                         <div className="field-card username-card">
                             <div className="section-title">UPDATE USERNAME</div>
 
@@ -195,10 +210,19 @@ export default function AccountPage() {
                                 <input
                                     className="update-input"
                                     value={newUsername}
-                                    onChange={(e) => setNewUsername(e.target.value)}
+                                    onChange={(e) => {
+                                        setNewUsername(e.target.value)
+                                        setUsernameMsg(null)
+                                        const chars = "0123456789!@#$%^&*"
+                                        const s = Array.from(
+                                            { length: 4 },
+                                            () => chars[Math.floor(Math.random() * chars.length)],
+                                        ).join("")
+                                        setPreviewSuffix(s)
+                                    }}
                                     onKeyDown={(e) => e.key === "Enter" && handleUpdateUsername()}
                                     placeholder="ENTER NEW USERNAME"
-                                    maxLength={32}
+                                    maxLength={12}
                                 />
                                 <button
                                     className="save-btn"
@@ -208,6 +232,17 @@ export default function AccountPage() {
                                     {usernameLoading ? "SAVING..." : "SAVE →"}
                                 </button>
                             </div>
+                            {newUsername && (
+                                <div
+                                    className="setpin-username-preview"
+                                    style={{ color: "#ffffff", fontSize: "12px" }}
+                                >
+                                    will be saved as:{" "}
+                                    <span style={{ color: "#ff6600" }}>
+                                        {newUsername.trim()}_{previewSuffix}
+                                    </span>
+                                </div>
+                            )}
                             {usernameMsg && (
                                 <div
                                     className={
@@ -238,7 +273,6 @@ export default function AccountPage() {
                                     gap: "12px",
                                 }}
                             >
-                                {/* Stop Tracking — amber */}
                                 <div className="tracking-tile">
                                     <div className="tile-label">TRACKING</div>
                                     <div className="tile-desc">
@@ -248,7 +282,6 @@ export default function AccountPage() {
                                     <button className="stop-btn">STOP TRACKING</button>
                                 </div>
 
-                                {/* Remove Wallet — red */}
                                 <div
                                     className={`remove-tile${confirmRemove ? " confirming" : ""}`}
                                 >

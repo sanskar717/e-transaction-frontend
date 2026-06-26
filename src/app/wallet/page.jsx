@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import ShootingStars from "../../components/ShootingStars"
 import { checkIfRegistered, checkHasPinSet } from "../../config/contracts"
 import Navbar from "./walletNavbar"
+import Transactions from "./Transactions"
 import Dashboard from "./dashboard"
 
 export default function WalletPage() {
@@ -73,6 +74,7 @@ export default function WalletPage() {
         <main style={{ background: "#000", minHeight: "100vh", paddingTop: "120px" }}>
             <ShootingStars />
             <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+            <Transactions activeTab={activeTab} />
             <Dashboard activeTab={activeTab} />
         </main>
     )

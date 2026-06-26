@@ -444,7 +444,7 @@
     animation: flickerIn 0.35s ease both;
 }
 .username-card:hover .section-title {
-    color: #ffffff;
+    color: #a78bfa;
     border-bottom-color: rgba(167, 139, 250, 0.2);
 }
 .username-card:hover .username-val {

@@ -92,3 +92,18 @@ export async function removeWallet() {
     await tx.wait()
     return tx
 }
+
+export async function getAllTrackedTransactions(address) {
+    const contract = await getTransactionTrackerContract()
+    return await contract.getTransactions(address)
+}
+
+export async function getLifetimeTransactionStats(address) {
+    const contract = await getTransactionTrackerContract()
+    return await contract.getWalletStats(address)
+}
+
+export async function getMonthlyTransactionStats(address, month, year) {
+    const contract = await getTrackerStorageContract()
+    return await contract.getMonthlyStats(address, month, year)
+}
