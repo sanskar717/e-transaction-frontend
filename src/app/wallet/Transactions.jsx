@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { Zap, Send, Download, Gem } from "lucide-react"
-import { getAllTrackedTransactions, getLifetimeTransactionStats } from "../../config/contracts"
-import { ethers } from "ethers"
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -13,16 +11,13 @@ function shortenAddr(addr) {
 }
 
 function formatEth(val) {
-    try {
-        return parseFloat(ethers.formatEther(val)).toFixed(6)
-    } catch {
-        return "0.000000"
-    }
+    if (!val) return "0.000000"
+    return parseFloat(val).toFixed(6)
 }
 
 function timeAgo(timestamp) {
     const now = Date.now()
-    const ts = Number(timestamp) * 1000
+    const ts = new Date(timestamp).getTime()
     const diff = now - ts
     if (diff < 60000) return `${Math.floor(diff / 1000)}s ago`
     if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
@@ -126,7 +121,7 @@ function StatCard({ label, value, accent, delay = 0, Icon }) {
 function TxRow({ tx, index }) {
     const [visible, setVisible] = useState(false)
     const [hovered, setHovered] = useState(false)
-    const isSent = Number(tx.txType) === 0 // ✅ fixed
+    const isSent = Number(tx.txType) === 0
     const accent = isSent ? "#f59e0b" : "#22c55e"
     const label = isSent ? "SENT" : "RECEIVED"
 
@@ -156,7 +151,6 @@ function TxRow({ tx, index }) {
                 cursor: "default",
             }}
         >
-            {/* type badge */}
             <div
                 style={{
                     display: "inline-flex",
@@ -177,8 +171,6 @@ function TxRow({ tx, index }) {
             >
                 {label}
             </div>
-
-            {/* from */}
             <div>
                 <div
                     style={{
@@ -199,11 +191,9 @@ function TxRow({ tx, index }) {
                         transition: "color 0.2s",
                     }}
                 >
-                    {shortenAddr(tx.from)} {/* ✅ fixed */}
+                    {shortenAddr(tx.from)}
                 </div>
             </div>
-
-            {/* to */}
             <div>
                 <div
                     style={{
@@ -224,11 +214,9 @@ function TxRow({ tx, index }) {
                         transition: "color 0.2s",
                     }}
                 >
-                    {shortenAddr(tx.to)} {/* ✅ fixed */}
+                    {shortenAddr(tx.to)}
                 </div>
             </div>
-
-            {/* amount */}
             <div style={{ textAlign: "right" }}>
                 <div
                     style={{
@@ -254,8 +242,6 @@ function TxRow({ tx, index }) {
                     {formatEth(tx.amount)} ETH
                 </div>
             </div>
-
-            {/* time */}
             <div style={{ textAlign: "right" }}>
                 <div
                     style={{
@@ -264,7 +250,7 @@ function TxRow({ tx, index }) {
                         color: "#334155",
                     }}
                 >
-                    {timeAgo(tx.timeStamp)} {/* ✅ fixed - capital S */}
+                    {timeAgo(tx.timeStamp)}
                 </div>
             </div>
         </div>
@@ -346,7 +332,6 @@ function SkeletonRow() {
 
 export default function Transactions({ walletAddress }) {
     const [transactions, setTransactions] = useState([])
-    const [stats, setStats] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
@@ -357,18 +342,13 @@ export default function Transactions({ walletAddress }) {
             try {
                 setLoading(true)
                 setError(null)
-
-                const [txs, lifetimeStats] = await Promise.all([
-                    getAllTrackedTransactions(walletAddress),
-                    getLifetimeTransactionStats(walletAddress),
-                ])
-
-                const sorted = [...txs].sort((a, b) => Number(b.timeStamp) - Number(a.timeStamp)) // ✅ fixed
-                setTransactions(sorted)
-                setStats(lifetimeStats)
+                const res = await fetch(`/api/transactions?address=${walletAddress}`)
+                const data = await res.json()
+                if (data.error) throw new Error(data.error)
+                setTransactions(data.transactions)
             } catch (err) {
                 console.error(err)
-                setError("Failed to fetch transactions. Check your connection.")
+                setError("Failed to fetch transactions.")
             } finally {
                 setLoading(false)
             }
@@ -377,8 +357,9 @@ export default function Transactions({ walletAddress }) {
         fetchData()
     }, [walletAddress])
 
-    const totalSent = transactions.filter((tx) => Number(tx.txType) === 0) // ✅ fixed
-    const totalReceived = transactions.filter((tx) => Number(tx.txType) === 1) // ✅ fixed
+    const totalSent = transactions.filter((tx) => Number(tx.txType) === 0)
+    const totalReceived = transactions.filter((tx) => Number(tx.txType) === 1)
+    const totalEthSent = totalSent.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0)
 
     return (
         <div
@@ -391,18 +372,9 @@ export default function Transactions({ walletAddress }) {
             }}
         >
             <style>{`
-                @keyframes pulse {
-                    0%, 100% { opacity: 0.4; }
-                    50% { opacity: 0.8; }
-                }
-                @keyframes fadeInDown {
-                    from { opacity: 0; transform: translateY(-12px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                @keyframes scanline {
-                    0% { transform: translateY(-100%); }
-                    100% { transform: translateY(100vh); }
-                }
+                @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+                @keyframes fadeInDown { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100vh); } }
                 ::-webkit-scrollbar { width: 4px; }
                 ::-webkit-scrollbar-track { background: transparent; }
                 ::-webkit-scrollbar-thumb { background: #f59e0b44; border-radius: 4px; }
@@ -489,13 +461,7 @@ export default function Transactions({ walletAddress }) {
                     />
                     <StatCard
                         label="ETH Sent"
-                        value={
-                            loading
-                                ? "—"
-                                : stats
-                                  ? `${parseFloat(ethers.formatEther(stats.totalSent || 0n)).toFixed(4)} ETH` // ✅ fixed
-                                  : "0 ETH"
-                        }
+                        value={loading ? "—" : `${totalEthSent.toFixed(4)} ETH`}
                         accent="#38bdf8"
                         delay={240}
                         Icon={Gem}
@@ -556,7 +522,6 @@ export default function Transactions({ walletAddress }) {
                         {error}
                     </div>
                 )}
-
                 {!error && loading && (
                     <div>
                         {Array.from({ length: 6 }).map((_, i) => (
@@ -564,16 +529,13 @@ export default function Transactions({ walletAddress }) {
                         ))}
                     </div>
                 )}
-
                 {!error && !loading && transactions.length === 0 && <EmptyState />}
-
                 {!error &&
                     !loading &&
                     transactions.map((tx, i) => (
                         <TxRow
-                            key={`${tx.from}-${tx.timeStamp}-${i}`} // ✅ fixed
+                            key={tx.hash || `${tx.from}-${tx.timeStamp}-${i}`}
                             tx={tx}
-                            walletAddress={walletAddress}
                             index={i}
                         />
                     ))}

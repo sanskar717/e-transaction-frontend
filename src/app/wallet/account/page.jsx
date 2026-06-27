@@ -167,7 +167,7 @@ export default function AccountPage() {
                     <div className="left-col acc-panel">
                         <div className="identity-card">
                             <div className="identity-corner" />
-                            <div className="card-label">// IDENTITY</div>
+                            <div className="card-label">IDENTITY</div>
                             <div className="identity-avatar">
                                 {profile?.userName?.[0]?.toUpperCase() || "?"}
                             </div>
