@@ -10,7 +10,7 @@ export default function Dashboard() {
                 background: "#000",
                 minHeight: "100vh",
                 fontFamily: "'Courier New', monospace",
-                paddingTop: "120px", // navbar (64px top + 44px tabs)
+                paddingTop: "120px",
             }}
         >
             <div
@@ -21,7 +21,7 @@ export default function Dashboard() {
                     letterSpacing: "3px",
                 }}
             >
-                // {activeTab.toUpperCase()} — coming soon
+                {activeTab.toUpperCase()} — coming soon
             </div>
         </div>
     )

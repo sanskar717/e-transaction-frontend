@@ -11,7 +11,7 @@ export default function WalletPage() {
     const router = useRouter()
     const [checking, setChecking] = useState(true)
     const [activeTab, setActiveTab] = useState("transactions")
-    const [walletAddress, setWalletAddress] = useState(null) // ✅ add this
+    const [walletAddress, setWalletAddress] = useState(null)
 
     useEffect(() => {
         const check = async () => {
@@ -41,7 +41,7 @@ export default function WalletPage() {
                     router.push("/setpin")
                     return
                 }
-                setWalletAddress(address) // ✅ add this
+                setWalletAddress(address)
                 setChecking(false)
             } catch (e) {
                 console.log(e)
@@ -76,7 +76,7 @@ export default function WalletPage() {
         <main style={{ background: "#000", minHeight: "100vh", paddingTop: "120px" }}>
             <ShootingStars />
             <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
-            <Transactions activeTab={activeTab} walletAddress={walletAddress} /> {/* ✅ pass it */}
+            <Transactions activeTab={activeTab} walletAddress={walletAddress} />
             <Dashboard activeTab={activeTab} />
         </main>
     )

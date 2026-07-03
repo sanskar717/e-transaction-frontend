@@ -237,7 +237,6 @@ export default function Navbar({ activeTab, setActiveTab }) {
                     return (
                         <div
                             key={item.key}
-                            // onClick={() => setActiveTab(item.key)}
                             onClick={() => {
                                 if (item.key === "account") {
                                     router.push("/wallet/account")

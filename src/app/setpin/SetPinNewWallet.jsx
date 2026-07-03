@@ -7,7 +7,7 @@ import "./Setpin.css"
 export default function SetPinNewWallet({ onSuccess, onBack }) {
     const [pin, setPin] = useState(["", "", "", "", ""])
     const [confirmPin, setConfirmPin] = useState(["", "", "", "", ""])
-    const [step, setStep] = useState("username") // "username" | "set" | "confirm"
+    const [step, setStep] = useState("username")
     const [username, setUsername] = useState("")
     const [usernameError, setUsernameError] = useState("")
     const [error, setError] = useState("")
@@ -117,8 +117,18 @@ export default function SetPinNewWallet({ onSuccess, onBack }) {
             ).join("")
             const finalUsername = `${username.trim()}_${suffix}`
 
-            await registerWallet(finalUsername) // Blockchain: register
-            await setPinOnChain(pin.join("")) // Blockchain: set PIN
+            await registerWallet(finalUsername)
+            await setPinOnChain(pin.join(""))
+
+            const accounts = await window.ethereum.request({ method: "eth_accounts" })
+            await fetch("/api/register-user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    walletAddress: accounts[0],
+                    username: finalUsername,
+                }),
+            })
 
             setLoading(false)
             setSuccess(true)
@@ -137,7 +147,6 @@ export default function SetPinNewWallet({ onSuccess, onBack }) {
     const currentArr = step === "set" ? pin : confirmPin
     const currentRefs = step === "set" ? inputRefs : confirmRefs
 
-    // Step progress
     const stepIndex = { username: 0, set: 1, confirm: 2 }
 
     return (
@@ -149,12 +158,12 @@ export default function SetPinNewWallet({ onSuccess, onBack }) {
                     <div className="setpin-success">
                         <span className="setpin-success-check">✓</span>
                         <div className="setpin-success-title">PIN Secured</div>
-                        <div className="setpin-success-sub">// WALLET PROTECTED</div>
+                        <div className="setpin-success-sub"> WALLET PROTECTED</div>
                     </div>
                 ) : (
                     <>
                         <div className="setpin-eyebrow">
-                            // <span>WALLET REGISTRY</span>
+                            <span>WALLET REGISTRY</span>
                         </div>
 
                         <div className="setpin-title">

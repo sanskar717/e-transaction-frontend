@@ -138,7 +138,7 @@ export default function EnterPinPage() {
             <ShootingStars />
             <div className="setpin-content">
                 <div className="setpin-eyebrow">
-                    // <span>WALLET ACCESS</span>
+                    <span>WALLET ACCESS</span>
                 </div>
 
                 <div className="setpin-title">Enter your PIN</div>

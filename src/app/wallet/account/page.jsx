@@ -81,6 +81,16 @@ export default function AccountPage() {
         try {
             const finalUsername = `${newUsername.trim()}_${previewSuffix}`
             await updateUserName(finalUsername)
+
+            await fetch("/api/update-username", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    walletAddress: address,
+                    newUsername: finalUsername,
+                }),
+            })
+
             setUsernameMsg({ type: "success", text: "✓ USERNAME UPDATED" })
             const p = await getUserProfile(address)
             setProfile(p)
@@ -102,6 +112,12 @@ export default function AccountPage() {
         setRemoveMsg(null)
         try {
             await removeWallet()
+
+            await fetch("/api/delete-user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ walletAddress: address }),
+            })
             sessionStorage.removeItem("pinVerified")
             router.push("/")
         } catch (e) {

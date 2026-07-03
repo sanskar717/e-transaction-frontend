@@ -1,9 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Zap, Send, Download, Gem } from "lucide-react"
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+import { useState, useEffect, useRef } from "react"
+import { Zap, Send, Download, Gem, Fuel } from "lucide-react"
 
 function shortenAddr(addr) {
     if (!addr) return ""
@@ -25,8 +23,6 @@ function timeAgo(timestamp) {
     return new Date(ts).toLocaleDateString()
 }
 
-// ─── Stat Card ────────────────────────────────────────────────────────────────
-
 function StatCard({ label, value, accent, delay = 0, Icon }) {
     const [visible, setVisible] = useState(false)
     const [hovered, setHovered] = useState(false)
@@ -38,76 +34,28 @@ function StatCard({ label, value, accent, delay = 0, Icon }) {
 
     return (
         <div
+            className={`stat-card ${hovered ? "stat-hovered" : ""}`}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
             style={{
-                flex: 1,
-                padding: "28px 24px",
-                background: hovered ? `${accent}08` : "rgba(255,255,255,0.02)",
-                border: `1px solid ${hovered ? accent + "40" : "rgba(255,255,255,0.06)"}`,
-                borderRadius: "16px",
-                position: "relative",
-                overflow: "hidden",
-                cursor: "default",
-                transition: "all 0.4s ease",
-                transform: visible ? "translateY(0) scale(1)" : "translateY(28px) scale(0.96)",
+                "--accent": accent,
+                transform: visible ? "translateY(0) scale(1)" : "translateY(32px) scale(0.94)",
                 opacity: visible ? 1 : 0,
+                transition: `transform 0.6s cubic-bezier(0.16,1,0.3,1) ${delay}ms, opacity 0.6s ease ${delay}ms`,
             }}
         >
-            <div
-                style={{
-                    position: "absolute",
-                    top: 0,
-                    left: hovered ? "0%" : "50%",
-                    width: hovered ? "100%" : "0%",
-                    height: "2px",
-                    background: accent,
-                    transition: "all 0.5s ease",
-                }}
-            />
-            <div
-                style={{
-                    position: "absolute",
-                    top: "-30px",
-                    right: "-30px",
-                    width: "80px",
-                    height: "80px",
-                    borderRadius: "50%",
-                    background: `radial-gradient(circle, ${accent}22 0%, transparent 70%)`,
-                    pointerEvents: "none",
-                }}
-            />
-            <div
-                style={{
-                    color: hovered ? accent : "#475569",
-                    marginBottom: "16px",
-                    transition: "color 0.4s ease",
-                }}
-            >
+            <div className="stat-glow" />
+            <div className="stat-shimmer" />
+            <div className="stat-border-top" />
+            <div className="stat-icon" style={{ color: hovered ? accent : "#334155" }}>
                 <Icon size={26} />
             </div>
+            <div className="stat-label">{label}</div>
             <div
+                className="stat-value"
                 style={{
-                    fontFamily: "'Orbitron', sans-serif",
-                    fontSize: "10px",
-                    letterSpacing: "2px",
-                    color: hovered ? "#ffffff" : "#475569",
-                    textTransform: "uppercase",
-                    marginBottom: "10px",
-                    transition: "color 0.4s ease",
-                }}
-            >
-                {label}
-            </div>
-            <div
-                style={{
-                    fontFamily: "'Courier New', monospace",
-                    fontSize: "22px",
-                    fontWeight: "900",
                     color: hovered ? accent : "#94a3b8",
                     textShadow: hovered ? `0 0 12px ${accent}66` : "none",
-                    transition: "all 0.4s ease",
-                    wordBreak: "break-all",
                 }}
             >
                 {value}
@@ -116,219 +64,136 @@ function StatCard({ label, value, accent, delay = 0, Icon }) {
     )
 }
 
-// ─── Transaction Row ──────────────────────────────────────────────────────────
-
 function TxRow({ tx, index }) {
     const [visible, setVisible] = useState(false)
     const [hovered, setHovered] = useState(false)
+    const [ripple, setRipple] = useState(null)
+    const rowRef = useRef(null)
     const isSent = Number(tx.txType) === 0
     const accent = isSent ? "#f59e0b" : "#22c55e"
-    const label = isSent ? "SENT" : "RECEIVED"
+    const accentDim = isSent ? "rgba(245,158,11," : "rgba(34,197,94,"
 
     useEffect(() => {
-        const t = setTimeout(() => setVisible(true), 80 + index * 60)
+        const t = setTimeout(() => setVisible(true), 60 + index * 50)
         return () => clearTimeout(t)
     }, [index])
 
+    function handleMouseEnter(e) {
+        setHovered(true)
+        const rect = rowRef.current.getBoundingClientRect()
+        setRipple({ x: e.clientX - rect.left, y: e.clientY - rect.top })
+        setTimeout(() => setRipple(null), 700)
+    }
+
     return (
         <div
-            onMouseEnter={() => setHovered(true)}
+            ref={rowRef}
+            className={`tx-row ${isSent ? "tx-sent" : "tx-recv"} ${hovered ? "tx-row-hovered" : ""}`}
+            onMouseEnter={handleMouseEnter}
             onMouseLeave={() => setHovered(false)}
             style={{
-                display: "grid",
-                gridTemplateColumns: "90px 1fr 1fr 160px 100px",
-                alignItems: "center",
-                gap: "12px",
-                padding: "14px 20px",
-                borderRadius: "8px",
-                background: hovered ? `${accent}10` : "rgba(255,255,255,0.02)",
-                border: `1px solid ${hovered ? accent + "40" : "rgba(255,255,255,0.06)"}`,
-                borderLeft: hovered ? `2px solid ${accent}` : "2px solid transparent",
-                marginBottom: "8px",
-                transform: visible ? "translateX(0)" : "translateX(-20px)",
+                "--accent": accent,
+                "--accent-dim": accentDim,
+                transform: visible
+                    ? hovered
+                        ? "translateX(4px) translateY(-1px)"
+                        : "translateX(0)"
+                    : "translateX(-32px)",
                 opacity: visible ? 1 : 0,
-                transition: `all 0.4s cubic-bezier(0.16,1,0.3,1) ${index * 40}ms`,
-                cursor: "default",
+                transition: `transform 0.45s cubic-bezier(0.16,1,0.3,1) ${index * 35}ms, opacity 0.4s ease ${index * 35}ms, box-shadow 0.3s ease, background 0.3s ease, border-color 0.3s ease`,
             }}
         >
-            <div
-                style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "4px 10px",
-                    borderRadius: "20px",
-                    background: `${accent}18`,
-                    border: `1px solid ${accent}55`,
-                    fontFamily: "'Courier New', monospace",
-                    fontSize: "10px",
-                    fontWeight: "700",
-                    letterSpacing: "1.5px",
-                    color: accent,
-                    textShadow: hovered ? `0 0 8px ${accent}` : "none",
-                    transition: "text-shadow 0.3s ease",
-                }}
-            >
-                {label}
-            </div>
-            <div>
-                <div
-                    style={{
-                        fontSize: "9px",
-                        color: "#475569",
-                        fontFamily: "'Courier New', monospace",
-                        letterSpacing: "2px",
-                        marginBottom: "3px",
-                    }}
-                >
-                    FROM
+            {ripple && (
+                <span
+                    className="tx-ripple"
+                    style={{ left: ripple.x, top: ripple.y, background: `${accent}22` }}
+                />
+            )}
+
+            <div className="tx-left-bar" />
+
+            <div className="tx-badge-col">
+                <div className={`tx-badge ${isSent ? "badge-sent" : "badge-recv"}`}>
+                    <span
+                        className="badge-dot"
+                        style={{ background: accent, boxShadow: `0 0 8px ${accent}` }}
+                    />
+                    <span>{isSent ? "SENT" : "RECV"}</span>
                 </div>
-                <div
-                    style={{
-                        fontFamily: "'Courier New', monospace",
-                        fontSize: "12px",
-                        color: hovered ? "#ffffff" : "#475569",
-                        transition: "color 0.2s",
-                    }}
-                >
+                {isSent ? (
+                    <div className="tx-arrow-icon sent-arrow">↑</div>
+                ) : (
+                    <div className="tx-arrow-icon recv-arrow">↓</div>
+                )}
+            </div>
+
+            <div className="tx-addr-col">
+                <div className="tx-col-label">FROM</div>
+                <div className="tx-addr" style={{ color: hovered ? "#c0cfe8" : "#4a5568" }}>
                     {shortenAddr(tx.from)}
                 </div>
             </div>
-            <div>
-                <div
-                    style={{
-                        fontSize: "9px",
-                        color: "#475569",
-                        fontFamily: "'Courier New', monospace",
-                        letterSpacing: "2px",
-                        marginBottom: "3px",
-                    }}
-                >
-                    TO
-                </div>
-                <div
-                    style={{
-                        fontFamily: "'Courier New', monospace",
-                        fontSize: "12px",
-                        color: hovered ? "#ffffff" : "#475569",
-                        transition: "color 0.2s",
-                    }}
-                >
+
+            <div className="tx-addr-col">
+                <div className="tx-col-label">TO</div>
+                <div className="tx-addr" style={{ color: hovered ? "#c0cfe8" : "#4a5568" }}>
                     {shortenAddr(tx.to)}
                 </div>
             </div>
-            <div style={{ textAlign: "right" }}>
+
+            <div className="tx-amount-col">
+                <div className="tx-col-label">AMOUNT</div>
                 <div
+                    className="tx-amount"
                     style={{
-                        fontSize: "9px",
-                        color: "#475569",
-                        fontFamily: "'Courier New', monospace",
-                        letterSpacing: "2px",
-                        marginBottom: "3px",
-                    }}
-                >
-                    AMOUNT
-                </div>
-                <div
-                    style={{
-                        fontFamily: "'Courier New', monospace",
-                        fontSize: "13px",
-                        fontWeight: "700",
                         color: accent,
-                        textShadow: hovered ? `0 0 10px ${accent}66` : "none",
-                        transition: "all 0.2s ease",
+                        textShadow: hovered
+                            ? `0 0 16px ${accent}cc, 0 0 32px ${accent}44`
+                            : "none",
                     }}
                 >
-                    {formatEth(tx.amount)} ETH
+                    {formatEth(tx.amount)}
+                    <span className="eth-label"> ETH</span>
                 </div>
             </div>
-            <div style={{ textAlign: "right" }}>
-                <div
-                    style={{
-                        fontFamily: "'Courier New', monospace",
-                        fontSize: "11px",
-                        color: "#334155",
-                    }}
-                >
-                    {timeAgo(tx.timeStamp)}
+
+            <div className="tx-gas-col">
+                <div className="tx-col-label">GAS</div>
+                <div className="tx-gas" style={{ color: hovered ? "#fbbf24" : "#78716c" }}>
+                    <Fuel size={11} color="#f59e0b" />
+                    <span>${tx.gasFeeUsd || "0.00"}</span>
                 </div>
             </div>
+
+            <div className="tx-time-col">
+                <div className="tx-col-label">TIME</div>
+                <div className="tx-time">{timeAgo(tx.timeStamp)}</div>
+            </div>
+
+            <div className="tx-scan-line" />
         </div>
     )
 }
-
-// ─── Empty State ──────────────────────────────────────────────────────────────
-
-function EmptyState() {
-    return (
-        <div
-            style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "80px 20px",
-            }}
-        >
-            <div
-                style={{
-                    fontFamily: "'Courier New', monospace",
-                    fontSize: "11px",
-                    letterSpacing: "4px",
-                    color: "#38bdf8",
-                    marginBottom: "12px",
-                }}
-            >
-                // NO TRANSACTIONS FOUND
-            </div>
-            <div
-                style={{
-                    fontFamily: "'Courier New', monospace",
-                    fontSize: "10px",
-                    color: "#334155",
-                    letterSpacing: "2px",
-                }}
-            >
-                Your transaction history will appear here
-            </div>
-        </div>
-    )
-}
-
-// ─── Skeleton Loader ──────────────────────────────────────────────────────────
 
 function SkeletonRow() {
     return (
-        <div
-            style={{
-                display: "grid",
-                gridTemplateColumns: "90px 1fr 1fr 160px 100px",
-                gap: "12px",
-                padding: "14px 20px",
-                borderRadius: "8px",
-                background: "rgba(255,255,255,0.015)",
-                border: "1px solid rgba(255,255,255,0.04)",
-                borderLeft: "2px solid transparent",
-                marginBottom: "8px",
-                animation: "pulse 1.5s ease-in-out infinite",
-            }}
-        >
-            {[80, 120, 120, 100, 70].map((w, i) => (
-                <div
-                    key={i}
-                    style={{
-                        height: "14px",
-                        borderRadius: "4px",
-                        background: "rgba(255,255,255,0.06)",
-                        width: `${w}px`,
-                    }}
-                />
+        <div className="skeleton-row">
+            {[90, 110, 110, 130, 80, 70].map((w, i) => (
+                <div key={i} className="skeleton-cell" style={{ width: w }} />
             ))}
         </div>
     )
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+function EmptyState() {
+    return (
+        <div className="empty-state">
+            <div className="empty-icon">◈</div>
+            <div className="empty-title"> NO TRANSACTIONS FOUND</div>
+            <div className="empty-sub">Your on-chain history will appear here</div>
+        </div>
+    )
+}
 
 export default function Transactions({ walletAddress }) {
     const [transactions, setTransactions] = useState([])
@@ -337,7 +202,6 @@ export default function Transactions({ walletAddress }) {
 
     useEffect(() => {
         if (!walletAddress) return
-
         async function fetchData() {
             try {
                 setLoading(true)
@@ -353,7 +217,6 @@ export default function Transactions({ walletAddress }) {
                 setLoading(false)
             }
         }
-
         fetchData()
     }, [walletAddress])
 
@@ -362,82 +225,276 @@ export default function Transactions({ walletAddress }) {
     const totalEthSent = totalSent.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0)
 
     return (
-        <div
-            style={{
-                minHeight: "100vh",
-                padding: "0",
-                fontFamily: "'Courier New', monospace",
-                color: "#fff",
-                position: "relative",
-            }}
-        >
+        <div className="tx-page">
             <style>{`
-                @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }
-                @keyframes fadeInDown { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
-                @keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100vh); } }
-                ::-webkit-scrollbar { width: 4px; }
-                ::-webkit-scrollbar-track { background: transparent; }
-                ::-webkit-scrollbar-thumb { background: #f59e0b44; border-radius: 4px; }
-                ::-webkit-scrollbar-thumb:hover { background: #f59e0b88; }
+                @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap');
+
+                .tx-page {
+                    min-height: 100vh;
+                    padding: 0;
+                    color: #fff;
+                    position: relative;
+                    font-family: 'Share Tech Mono', 'Courier New', monospace;
+                    overflow-x: hidden;
+                }
+
+                .tx-page::before {
+                    content: '';
+                    position: fixed;
+                    inset: 0;
+                    background: repeating-linear-gradient(
+                        0deg,
+                        transparent,
+                        transparent 2px,
+                        rgba(0,0,0,0.03) 2px,
+                        rgba(0,0,0,0.03) 4px
+                    );
+                    pointer-events: none;
+                    z-index: 0;
+                }
+
+                .tx-inner { position: relative; z-index: 1; padding: 36px 44px 60px; }
+
+                @keyframes scanBeam {
+                    0% { transform: translateY(-100vh); opacity: 0; }
+                    10% { opacity: 1; }
+                    90% { opacity: 1; }
+                    100% { transform: translateY(200vh); opacity: 0; }
+                }
+                .scan-beam {
+                    position: fixed;
+                    left: 0; right: 0;
+                    height: 120px;
+                    background: linear-gradient(180deg, transparent 0%, rgba(56,189,248,0.03) 40%, rgba(56,189,248,0.06) 50%, rgba(56,189,248,0.03) 60%, transparent 100%);
+                    animation: scanBeam 12s linear infinite;
+                    pointer-events: none;
+                    z-index: 0;
+                }
+
+                @keyframes fadeDown { from { opacity:0; transform:translateY(-16px); } to { opacity:1; transform:translateY(0); } }
+                .tx-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:36px; animation: fadeDown 0.5s ease; }
+                .tx-title {
+                    font-family: 'Orbitron', sans-serif;
+                    font-size: 24px; font-weight: 900; letter-spacing: 4px;
+                    background: linear-gradient(135deg, #ffffff 0%, #94a3b8 50%, #38bdf8 100%);
+                    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+                }
+                .tx-subtitle { font-size: 10px; color: #334155; letter-spacing: 2.5px; margin-top: 6px; }
+
+                @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+                .live-dot { display:inline-flex; align-items:center; gap:6px; font-size:9px; letter-spacing:2px; color:#22c55e; }
+                .live-dot::before {
+                    content:'';width:6px;height:6px;border-radius:50%;
+                    background:#22c55e;box-shadow:0 0 8px #22c55e;
+                    animation: livePulse 1.5s ease infinite;
+                }
+
+                /* ── Stat Cards ── */
+                .stat-grid { display:flex; gap:20px; margin-bottom:40px; }
+
+                .stat-card {
+                    flex:1; padding:28px 24px;
+                    background: rgba(255,255,255,0.02);
+                    border: 1px solid rgba(255,255,255,0.06);
+                    border-radius: 16px;
+                    position: relative; overflow: hidden; cursor: default;
+                    transition: all 0.4s ease;
+                }
+                .stat-card.stat-hovered {
+                    background: color-mix(in srgb, var(--accent) 8%, transparent);
+                    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+                    box-shadow: 0 8px 32px color-mix(in srgb, var(--accent) 15%, transparent);
+                }
+                .stat-glow {
+                    position:absolute; top:-30px; right:-30px;
+                    width:80px; height:80px; border-radius:50%;
+                    background: radial-gradient(circle, color-mix(in srgb, var(--accent) 22%, transparent) 0%, transparent 70%);
+                    pointer-events:none;
+                }
+                .stat-shimmer {
+                    position:absolute; inset:0;
+                    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.02) 50%, transparent 60%);
+                    background-size: 200% 100%;
+                    pointer-events:none;
+                }
+                @keyframes shimmerSlide { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+                .stat-hovered .stat-shimmer { animation: shimmerSlide 1.5s ease infinite; }
+
+                .stat-border-top {
+                    position:absolute; top:0; left:50%; width:0; height:2px;
+                    background: var(--accent);
+                    transition: left 0.5s ease, width 0.5s ease;
+                    pointer-events:none;
+                }
+                .stat-hovered .stat-border-top { left:0; width:100%; }
+
+                .stat-icon { margin-bottom:16px; transition: color 0.4s ease; }
+                .stat-label { font-size:10px; letter-spacing:2px; color:#475569; text-transform:uppercase; margin-bottom:10px; transition: color 0.3s; }
+                .stat-hovered .stat-label { color:#ffffff; }
+                .stat-value { font-family:'Courier New',monospace; font-size:22px; font-weight:900; transition: all 0.4s ease; word-break:break-all; color:#94a3b8; }
+                .stat-hovered .stat-value { text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent); }
+
+                .tx-table-header {
+                    display: grid;
+                    grid-template-columns: 120px 1fr 1fr 160px 100px 80px;
+                    gap: 12px; padding: 10px 24px; margin-bottom:6px;
+                }
+                .th-label { font-size:8px; letter-spacing:3px; color:#1e293b; text-transform:uppercase; }
+
+                .tx-sep {
+                    height:1px; margin-bottom:14px;
+                    background: linear-gradient(90deg, transparent, rgba(56,189,248,0.25), rgba(168,139,250,0.15), transparent);
+                }
+
+                @keyframes rowIn { from{opacity:0;transform:translateX(-32px)} to{opacity:1;transform:translateX(0)} }
+                @keyframes sentGlow { 0%,100%{box-shadow:0 2px 20px rgba(245,158,11,0.06)} 50%{box-shadow:0 2px 30px rgba(245,158,11,0.14)} }
+                @keyframes recvGlow { 0%,100%{box-shadow:0 2px 20px rgba(34,197,94,0.06)} 50%{box-shadow:0 2px 30px rgba(34,197,94,0.14)} }
+
+                .tx-row {
+                    display: grid;
+                    grid-template-columns: 120px 1fr 1fr 160px 100px 80px;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 16px 24px;
+                    border-radius: 10px;
+                    margin-bottom: 8px;
+                    position: relative; overflow: hidden; cursor: default;
+                    border: 1px solid transparent;
+                    border-left: 2px solid transparent;
+                }
+                .tx-sent {
+                    background: rgba(245,158,11,0.04);
+                    border-color: rgba(245,158,11,0.1);
+                    border-left-color: rgba(245,158,11,0.4);
+                }
+                .tx-recv {
+                    background: rgba(34,197,94,0.04);
+                    border-color: rgba(34,197,94,0.1);
+                    border-left-color: rgba(34,197,94,0.4);
+                }
+                .tx-sent.tx-row-hovered {
+                    background: rgba(245,158,11,0.09);
+                    border-color: rgba(245,158,11,0.3);
+                    border-left-color: #f59e0b;
+                    box-shadow: 0 4px 32px rgba(245,158,11,0.15), inset 0 0 40px rgba(245,158,11,0.03);
+                    animation: sentGlow 2s ease infinite;
+                }
+                .tx-recv.tx-row-hovered {
+                    background: rgba(34,197,94,0.09);
+                    border-color: rgba(34,197,94,0.3);
+                    border-left-color: #22c55e;
+                    box-shadow: 0 4px 32px rgba(34,197,94,0.15), inset 0 0 40px rgba(34,197,94,0.03);
+                    animation: recvGlow 2s ease infinite;
+                }
+
+                .tx-ripple {
+                    position:absolute; border-radius:50%;
+                    width:300px; height:300px;
+                    margin-left:-150px; margin-top:-150px;
+                    pointer-events:none;
+                    animation: rippleOut 0.7s ease-out forwards;
+                }
+                @keyframes rippleOut { 0%{transform:scale(0);opacity:1} 100%{transform:scale(1);opacity:0} }
+
+                .tx-left-bar {
+                    position:absolute; left:0; top:10%; height:80%; width:2px;
+                    background: var(--accent);
+                    opacity:0; border-radius:0 2px 2px 0;
+                    transition: opacity 0.3s, height 0.3s;
+                    box-shadow: 0 0 8px var(--accent);
+                }
+                .tx-row-hovered .tx-left-bar { opacity:1; }
+
+                @keyframes scanRow { 0%{left:-100%} 100%{left:200%} }
+                .tx-scan-line {
+                    position:absolute; top:0; left:-100%; width:40%; height:100%;
+                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.02), transparent);
+                    pointer-events:none;
+                }
+                .tx-row-hovered .tx-scan-line { animation: scanRow 1.2s ease infinite; }
+
+                .tx-badge-col { display:flex; flex-direction:column; align-items:flex-start; gap:6px; }
+                .tx-badge {
+                    display:inline-flex; align-items:center; gap:6px;
+                    padding:4px 12px; border-radius:20px;
+                    font-size:10px; font-weight:700; letter-spacing:2px;
+                    transition: all 0.3s;
+                }
+                .badge-sent {
+                    background: rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.35); color:#f59e0b;
+                }
+                .badge-recv {
+                    background: rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.35); color:#22c55e;
+                }
+                .tx-row-hovered .badge-sent { background:rgba(245,158,11,0.22); box-shadow:0 0 12px rgba(245,158,11,0.35); }
+                .tx-row-hovered .badge-recv { background:rgba(34,197,94,0.22); box-shadow:0 0 12px rgba(34,197,94,0.35); }
+                .badge-dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+
+                .tx-arrow-icon { font-size:14px; font-weight:900; line-height:1; }
+                .sent-arrow { color:rgba(245,158,11,0.5); }
+                .recv-arrow { color:rgba(34,197,94,0.5); }
+                .tx-row-hovered .sent-arrow { color:#f59e0b; text-shadow:0 0 8px #f59e0b; }
+                .tx-row-hovered .recv-arrow { color:#22c55e; text-shadow:0 0 8px #22c55e; }
+
+                .tx-col-label { font-size:8px; letter-spacing:2.5px; color:#1e293b; text-transform:uppercase; margin-bottom:4px; }
+                .tx-addr { font-size:12px; transition:color 0.2s; }
+                .tx-addr-col {}
+                .tx-amount-col {}
+                .tx-amount { font-size:14px; font-weight:700; transition:all 0.25s; letter-spacing:0.5px; }
+                .eth-label { font-size:10px; letter-spacing:1px; opacity:0.7; }
+                .tx-gas-col {}
+                .tx-gas { display:flex; align-items:center; gap:5px; font-size:12px; transition:color 0.2s; }
+                .tx-time-col {}
+                .tx-time { font-size:11px; color:#334155; transition:color 0.2s; }
+                .tx-row-hovered .tx-time { color:#475569; }
+
+                @keyframes skeletonPulse { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
+                .skeleton-row {
+                    display:flex; align-items:center; gap:20px;
+                    padding:18px 24px; border-radius:10px; margin-bottom:8px;
+                    background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.04);
+                }
+                .skeleton-cell {
+                    height:13px; border-radius:4px;
+                    background:rgba(255,255,255,0.07);
+                    animation:skeletonPulse 1.6s ease infinite;
+                    flex-shrink:0;
+                }
+
+                @keyframes floatUp { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+                .empty-state { display:flex; flex-direction:column; align-items:center; padding:80px 20px; }
+                .empty-icon { font-size:40px; color:#1e293b; margin-bottom:20px; animation:floatUp 3s ease infinite; }
+                .empty-title { font-size:11px; letter-spacing:4px; color:#38bdf8; margin-bottom:10px; }
+                .empty-sub { font-size:10px; color:#1e293b; letter-spacing:2px; }
+
+                .tx-error {
+                    padding:20px; border-radius:8px;
+                    background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2);
+                    color:#f59e0b; font-size:11px; letter-spacing:2px; text-align:center;
+                }
+
+                ::-webkit-scrollbar { width:3px; }
+                ::-webkit-scrollbar-track { background:transparent; }
+                ::-webkit-scrollbar-thumb { background:#f59e0b33; border-radius:3px; }
+                ::-webkit-scrollbar-thumb:hover { background:#f59e0b66; }
             `}</style>
 
-            <div
-                style={{
-                    position: "fixed",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: "2px",
-                    background: "linear-gradient(transparent, rgba(245,158,11,0.12), transparent)",
-                    animation: "scanline 8s linear infinite",
-                    pointerEvents: "none",
-                    zIndex: 0,
-                }}
-            />
+            <div className="scan-beam" />
 
-            <div style={{ position: "relative", zIndex: 1, padding: "32px 40px 40px" }}>
-                {/* ── Header ── */}
-                <div
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        marginBottom: "28px",
-                        animation: "fadeInDown 0.5s ease",
-                    }}
-                >
+            <div className="tx-inner">
+                <div className="tx-header">
                     <div>
-                        <div
-                            style={{
-                                fontFamily: "'Orbitron', sans-serif",
-                                fontSize: "22px",
-                                fontWeight: "900",
-                                letterSpacing: "3px",
-                                background: "linear-gradient(135deg, #fff 0%, #aaa 100%)",
-                                WebkitBackgroundClip: "text",
-                                WebkitTextFillColor: "transparent",
-                            }}
-                        >
-                            TRANSACTION HISTORY
-                        </div>
-                        <div
-                            style={{
-                                fontSize: "10px",
-                                color: "#444",
-                                letterSpacing: "2px",
-                                marginTop: "4px",
-                                fontFamily: "'Courier New', monospace",
-                            }}
-                        >
+                        <div className="tx-title">TRANSACTION HISTORY</div>
+                        <div className="tx-subtitle">
                             {walletAddress
                                 ? `${shortenAddr(walletAddress)} · ${transactions.length} records`
-                                : "Loading..."}
+                                : "connecting..."}
                         </div>
                     </div>
+                    <div className="live-dot">LIVE</div>
                 </div>
 
-                {/* ── Stat Cards ── */}
-                <div style={{ display: "flex", gap: "20px", marginBottom: "40px" }}>
+                <div className="stat-grid">
                     <StatCard
                         label="Total Transactions"
                         value={loading ? "—" : transactions.length}
@@ -468,67 +525,19 @@ export default function Transactions({ walletAddress }) {
                     />
                 </div>
 
-                {/* ── Table Header ── */}
-                <div
-                    style={{
-                        display: "grid",
-                        gridTemplateColumns: "90px 1fr 1fr 160px 100px",
-                        gap: "12px",
-                        padding: "10px 20px",
-                        marginBottom: "6px",
-                    }}
-                >
-                    {["TYPE", "FROM", "TO", "AMOUNT", "TIME"].map((h) => (
-                        <div
-                            key={h}
-                            style={{
-                                fontSize: "9px",
-                                letterSpacing: "3px",
-                                color: "#334155",
-                                textTransform: "uppercase",
-                                fontFamily: "'Courier New', monospace",
-                                textAlign: h === "AMOUNT" || h === "TIME" ? "right" : "left",
-                            }}
-                        >
+                <div className="tx-table-header">
+                    {["TYPE", "FROM", "TO", "AMOUNT", "GAS", "TIME"].map((h) => (
+                        <div key={h} className="th-label">
                             {h}
                         </div>
                     ))}
                 </div>
+                <div className="tx-sep" />
 
-                {/* ── Separator ── */}
-                <div
-                    style={{
-                        height: "1px",
-                        background:
-                            "linear-gradient(90deg, transparent, rgba(56,189,248,0.3), transparent)",
-                        marginBottom: "12px",
-                    }}
-                />
-
-                {/* ── Content ── */}
-                {error && (
-                    <div
-                        style={{
-                            padding: "20px",
-                            borderRadius: "8px",
-                            background: "rgba(245,158,11,0.06)",
-                            border: "1px solid rgba(245,158,11,0.2)",
-                            color: "#f59e0b",
-                            fontSize: "11px",
-                            letterSpacing: "2px",
-                            textAlign: "center",
-                        }}
-                    >
-                        {error}
-                    </div>
-                )}
-                {!error && loading && (
-                    <div>
-                        {Array.from({ length: 6 }).map((_, i) => (
-                            <SkeletonRow key={i} />
-                        ))}
-                    </div>
-                )}
+                {error && <div className="tx-error">{error}</div>}
+                {!error &&
+                    loading &&
+                    Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)}
                 {!error && !loading && transactions.length === 0 && <EmptyState />}
                 {!error &&
                     !loading &&
