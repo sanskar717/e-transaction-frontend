@@ -5,6 +5,21 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false }
 })
 
+async function fetchWithRetry(url, options, retries = 3, delayMs = 1000) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        const res = await fetch(url, options)
+        const data = await res.json()
+
+        if (data?.error?.code === 429) {
+            if (attempt === retries) return data
+            const wait = delayMs * Math.pow(2, attempt)
+            await new Promise(r => setTimeout(r, wait))
+            continue
+        }
+        return data
+    }
+}
+
 async function getEthPrice(dateKey, base, blockTimestamp) {
     const client = await pool.connect()
     try {
@@ -26,7 +41,7 @@ async function getEthPrice(dateKey, base, blockTimestamp) {
         let price = 0
 
         if (isToday) {
-            const priceRes = await fetch(base, {
+            const priceData = await fetchWithRetry(base, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -38,8 +53,9 @@ async function getEthPrice(dateKey, base, blockTimestamp) {
                     }, "latest"]
                 })
             })
-            const priceData = await priceRes.json()
-            price = parseInt(priceData.result, 16) / 1e8
+            if (priceData?.result) {
+                price = parseInt(priceData.result, 16) / 1e8
+            }
         } else {
             const [dd, mm, yyyy] = dateKey.split("-")
             const cgRes = await fetch(
@@ -73,37 +89,38 @@ export async function GET(request) {
     const address = searchParams.get("address")
     if (!address) return Response.json({ error: "Address required" }, { status: 400 })
 
-    const key = process.env.ALCHEMY_API_KEY
-    const base = `https://eth-sepolia.g.alchemy.com/v2/${key}`
+    const infuraBase = process.env.INFURA_URL
+    const etherscanKey = process.env.ETHERSCAN_API_KEY
 
     try {
-        const [sentRes, receivedRes] = await Promise.all([
-            fetch(base, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    id: 1, jsonrpc: "2.0",
-                    method: "alchemy_getAssetTransfers",
-                    params: [{ fromBlock: "0x0", toBlock: "latest", fromAddress: address, category: ["external"], withMetadata: true, excludeZeroValue: true, maxCount: "0x64", order: "desc" }]
-                })
-            }),
-            fetch(base, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    id: 2, jsonrpc: "2.0",
-                    method: "alchemy_getAssetTransfers",
-                    params: [{ fromBlock: "0x0", toBlock: "latest", toAddress: address, category: ["external"], withMetadata: true, excludeZeroValue: true, maxCount: "0x64", order: "desc" }]
-                })
-            })
-        ])
+        const etherscanUrl = `https://api.etherscan.io/v2/api?chainid=11155111&module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=desc&apikey=${etherscanKey}`
 
-        const [sentData, receivedData] = await Promise.all([sentRes.json(), receivedRes.json()])
+        const etherscanRes = await fetch(etherscanUrl)
+        const etherscanData = await etherscanRes.json()
 
-        const allTransfers = [
-            ...(sentData.result?.transfers || []).map(tx => ({ ...tx, txType: 0 })),
-            ...(receivedData.result?.transfers || []).map(tx => ({ ...tx, txType: 1 })),
-        ]
+        if (etherscanData.status !== "1" && etherscanData.message !== "No transactions found") {
+            return Response.json(
+                { error: `Etherscan error: ${etherscanData.message || etherscanData.result}` },
+                { status: 429 }
+            )
+        }
+
+        const rawTxs = etherscanData.result || []
+
+        const allTransfers = rawTxs
+            .filter(tx => parseFloat(tx.value) > 0)
+            .map(tx => ({
+                hash: tx.hash,
+                from: tx.from,
+                to: tx.to,
+                value: (parseFloat(tx.value) / 1e18).toString(),
+                blockNum: tx.blockNumber,
+                metadata: { blockTimestamp: new Date(parseInt(tx.timeStamp) * 1000).toISOString() },
+                txType: tx.from?.toLowerCase() === address.toLowerCase() ? 0 : 1,
+                // Etherscan already gives us gasUsed + gasPrice directly — no extra RPC calls needed!
+                gasUsed: tx.gasUsed,
+                gasPrice: tx.gasPrice
+            }))
 
         const uniqueDates = [...new Set(allTransfers.map(tx => {
             const date = new Date(tx.metadata?.blockTimestamp)
@@ -122,73 +139,36 @@ export async function GET(request) {
                 const yyyy = date.getUTCFullYear()
                 return `${dd}-${mm}-${yyyy}` === dateKey
             })
-            priceCache[dateKey] = await getEthPrice(dateKey, base, sampleTx?.metadata?.blockTimestamp)
+            priceCache[dateKey] = await getEthPrice(dateKey, infuraBase, sampleTx?.metadata?.blockTimestamp)
             await new Promise(r => setTimeout(r, 300))
         }
 
-        const txsWithGas = await Promise.all(
-            allTransfers.map(async (tx) => {
-                try {
-                    const [receiptRes, txRes] = await Promise.all([
-                        fetch(base, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                jsonrpc: "2.0", id: 1,
-                                method: "eth_getTransactionReceipt",
-                                params: [tx.hash]
-                            })
-                        }),
-                        fetch(base, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                jsonrpc: "2.0", id: 1,
-                                method: "eth_getTransactionByHash",
-                                params: [tx.hash]
-                            })
-                        })
-                    ])
+        // ── No extra RPC calls needed — Etherscan already gave us gasUsed/gasPrice ──
+        const txsWithGas = allTransfers.map(tx => {
+            const gasUsed = parseInt(tx.gasUsed || "0")
+            const gasPrice = parseInt(tx.gasPrice || "0")
+            const gasFeeEth = (gasUsed * gasPrice) / 1e18
 
-                    const [receiptData, txData] = await Promise.all([receiptRes.json(), txRes.json()])
+            const date = new Date(tx.metadata?.blockTimestamp)
+            const dd = String(date.getUTCDate()).padStart(2, "0")
+            const mm = String(date.getUTCMonth() + 1).padStart(2, "0")
+            const yyyy = date.getUTCFullYear()
+            const dateKey = `${dd}-${mm}-${yyyy}`
 
-                    const gasUsed = parseInt(receiptData.result?.gasUsed || "0", 16)
-                    const gasPrice = parseInt(txData.result?.gasPrice || "0", 16)
-                    const gasFeeEth = (gasUsed * gasPrice) / 1e18
+            const ethPrice = priceCache[dateKey] || 0
+            const gasFeeUsd = (gasFeeEth * ethPrice).toFixed(4)
 
-                    const date = new Date(tx.metadata?.blockTimestamp)
-                    const dd = String(date.getUTCDate()).padStart(2, "0")
-                    const mm = String(date.getUTCMonth() + 1).padStart(2, "0")
-                    const yyyy = date.getUTCFullYear()
-                    const dateKey = `${dd}-${mm}-${yyyy}`
-
-                    const ethPrice = priceCache[dateKey] || 0
-                    const gasFeeUsd = (gasFeeEth * ethPrice).toFixed(4)
-
-                    return {
-                        hash: tx.hash,
-                        from: tx.from,
-                        to: tx.to,
-                        amount: tx.value,
-                        timeStamp: tx.metadata?.blockTimestamp,
-                        blockNum: tx.blockNum,
-                        gasFeeUsd,
-                        txType: tx.txType
-                    }
-                } catch {
-                    return {
-                        hash: tx.hash,
-                        from: tx.from,
-                        to: tx.to,
-                        amount: tx.value,
-                        timeStamp: tx.metadata?.blockTimestamp,
-                        blockNum: tx.blockNum,
-                        gasFeeUsd: "0.00",
-                        txType: tx.txType
-                    }
-                }
-            })
-        )
+            return {
+                hash: tx.hash,
+                from: tx.from,
+                to: tx.to,
+                amount: tx.value,
+                timeStamp: tx.metadata?.blockTimestamp,
+                blockNum: tx.blockNum,
+                gasFeeUsd,
+                txType: tx.txType
+            }
+        })
 
         const all = txsWithGas.sort((a, b) => new Date(b.timeStamp) - new Date(a.timeStamp))
         return Response.json({ transactions: all })

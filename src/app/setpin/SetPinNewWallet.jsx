@@ -138,7 +138,11 @@ export default function SetPinNewWallet({ onSuccess, onBack }) {
             }, 1100)
         } catch (err) {
             console.log("Error:", err)
-            setError("Transaction failed. Try again.")
+            if (err?.message?.includes("insufficient funds")) {
+                setError("Insufficient ETH — add Sepolia ETH and try again.")
+            } else {
+                setError("Transaction failed. Try again.")
+            }
             setLoading(false)
             triggerShake()
         }

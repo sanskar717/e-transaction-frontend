@@ -202,6 +202,16 @@ export default function Transactions({ walletAddress }) {
 
     useEffect(() => {
         if (!walletAddress) return
+
+        const cacheKey = `txCache_${walletAddress}`
+        const cached = sessionStorage.getItem(cacheKey)
+
+        if (cached) {
+            setTransactions(JSON.parse(cached))
+            setLoading(false)
+            return
+        }
+
         async function fetchData() {
             try {
                 setLoading(true)
@@ -210,6 +220,7 @@ export default function Transactions({ walletAddress }) {
                 const data = await res.json()
                 if (data.error) throw new Error(data.error)
                 setTransactions(data.transactions)
+                sessionStorage.setItem(cacheKey, JSON.stringify(data.transactions))
             } catch (err) {
                 console.error(err)
                 setError("Failed to fetch transactions.")
@@ -279,7 +290,7 @@ export default function Transactions({ walletAddress }) {
                     background: linear-gradient(135deg, #ffffff 0%, #94a3b8 50%, #38bdf8 100%);
                     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
                 }
-                .tx-subtitle { font-size: 10px; color: #334155; letter-spacing: 2.5px; margin-top: 6px; }
+                .tx-subtitle { font-size: 10px; color: #ffffff; letter-spacing: 2.5px; margin-top: 6px; }
 
                 @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
                 .live-dot { display:inline-flex; align-items:center; gap:6px; font-size:9px; letter-spacing:2px; color:#22c55e; }
@@ -301,9 +312,9 @@ export default function Transactions({ walletAddress }) {
                     transition: all 0.4s ease;
                 }
                 .stat-card.stat-hovered {
-                    background: color-mix(in srgb, var(--accent) 8%, transparent);
-                    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
-                    box-shadow: 0 8px 32px color-mix(in srgb, var(--accent) 15%, transparent);
+                    background: color-mix(in srgb, var(--accent) 3%, transparent);
+                    border-color: color-mix(in srgb, var(--accent) 25%, transparent);
+                    box-shadow: 0 8px 32px color-mix(in srgb, var(--accent) 8%, transparent);
                 }
                 .stat-glow {
                     position:absolute; top:-30px; right:-30px;
@@ -329,17 +340,16 @@ export default function Transactions({ walletAddress }) {
                 .stat-hovered .stat-border-top { left:0; width:100%; }
 
                 .stat-icon { margin-bottom:16px; transition: color 0.4s ease; }
-                .stat-label { font-size:10px; letter-spacing:2px; color:#475569; text-transform:uppercase; margin-bottom:10px; transition: color 0.3s; }
+                .stat-label { font-size:8px; letter-spacing:2px; color:#475569; text-transform:uppercase; margin-bottom:10px; transition: color 0.3s; font-family:'Orbitron', sans-serif; }
                 .stat-hovered .stat-label { color:#ffffff; }
                 .stat-value { font-family:'Courier New',monospace; font-size:22px; font-weight:900; transition: all 0.4s ease; word-break:break-all; color:#94a3b8; }
-                .stat-hovered .stat-value { text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent); }
-
+                .stat-hovered .stat-value { text-shadow: none; } 
                 .tx-table-header {
                     display: grid;
                     grid-template-columns: 120px 1fr 1fr 160px 100px 80px;
                     gap: 12px; padding: 10px 24px; margin-bottom:6px;
                 }
-                .th-label { font-size:8px; letter-spacing:3px; color:#1e293b; text-transform:uppercase; }
+                .th-label { font-size:10px; letter-spacing:3px; color:#ffffff; text-transform:uppercase; font-family:'Orbitron', sans-serif; }
 
                 .tx-sep {
                     height:1px; margin-bottom:14px;
