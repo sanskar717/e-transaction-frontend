@@ -240,6 +240,12 @@ export default function Navbar({ activeTab, setActiveTab }) {
                             onClick={() => {
                                 if (item.key === "account") {
                                     router.push("/wallet/account")
+                                } else if (item.key === "sent") {
+                                    router.push("/wallet/sent")
+                                } else if (item.key === "received") {
+                                    router.push("/wallet/received")
+                                } else if (item.key === "transactions") {
+                                    router.push("/wallet")
                                 } else {
                                     setActiveTab(item.key)
                                 }

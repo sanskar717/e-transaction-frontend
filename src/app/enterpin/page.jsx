@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import ShootingStars from "../../components/ShootingStars"
-import { verifyPinOnChain, checkIfRegistered, checkHasPinSet } from "../../config/contracts"
+import { checkIfRegistered, checkHasPinSet } from "../../config/contracts"
 import "../setpin/Setpin.css"
 
 export default function EnterPinPage() {
@@ -97,10 +97,22 @@ export default function EnterPinPage() {
 
         setLoading(true)
         try {
-            const isValid = await verifyPinOnChain(pin.join(""))
-            if (isValid) {
-                sessionStorage.setItem("pinVerified", "true")
+            const accounts = await window.ethereum.request({ method: "eth_accounts" })
+            const address = accounts[0]
+
+            const res = await fetch("/api/verify-pin", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ address, pin: pin.join("") }),
+            })
+
+            const data = await res.json()
+
+            if (res.ok && data.success) {
+                sessionStorage.setItem("session", data.token)
                 router.push("/wallet")
+            } else if (data.error === "NOT_REGISTERED" || data.error === "NO_PIN_SET") {
+                router.push("/setpin")
             } else {
                 setError("Wrong PIN — try again")
                 setPin(["", "", "", "", ""])

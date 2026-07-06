@@ -28,8 +28,8 @@ export default function AccountPage() {
 
     useEffect(() => {
         const check = async () => {
-            const pinVerified = sessionStorage.getItem("pinVerified")
-            if (!pinVerified) {
+            const token = sessionStorage.getItem("session")
+            if (!token) {
                 router.push("/enterpin")
                 return
             }

@@ -1,8 +1,12 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { Zap, Send, Download, Gem, Fuel } from "lucide-react"
-import "./Transactions.css"
+import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { Zap, Send, Gem, Fuel } from "lucide-react"
+import { checkIfRegistered, checkHasPinSet } from "../../../config/contracts"
+import Navbar from "../walletNavbar"
+import "../Transactions.css"
+import ShootingStars from "../../../components/ShootingStars"
 
 function shortenAddr(addr) {
     if (!addr) return ""
@@ -69,10 +73,9 @@ function TxRow({ tx, index }) {
     const [visible, setVisible] = useState(false)
     const [hovered, setHovered] = useState(false)
     const [ripple, setRipple] = useState(null)
-    const rowRef = useRef(null)
-    const isSent = Number(tx.txType) === 0
-    const accent = isSent ? "#f59e0b" : "#22c55e"
-    const accentDim = isSent ? "rgba(245,158,11," : "rgba(34,197,94,"
+    const isSent = true
+    const accent = "#f59e0b"
+    const accentDim = "rgba(245,158,11,"
 
     useEffect(() => {
         const t = setTimeout(() => setVisible(true), 60 + index * 50)
@@ -81,16 +84,13 @@ function TxRow({ tx, index }) {
 
     function handleMouseEnter(e) {
         setHovered(true)
-        const rect = rowRef.current.getBoundingClientRect()
-        setRipple({ x: e.clientX - rect.left, y: e.clientY - rect.top })
         setTimeout(() => setRipple(null), 700)
     }
 
     return (
         <div
-            ref={rowRef}
-            className={`tx-row ${isSent ? "tx-sent" : "tx-recv"} ${hovered ? "tx-row-hovered" : ""}`}
-            onMouseEnter={handleMouseEnter}
+            className={`tx-row tx-sent ${hovered ? "tx-row-hovered" : ""}`}
+            onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
             style={{
                 "--accent": accent,
@@ -104,18 +104,11 @@ function TxRow({ tx, index }) {
                 transition: `transform 0.45s cubic-bezier(0.16,1,0.3,1) ${index * 35}ms, opacity 0.4s ease ${index * 35}ms, box-shadow 0.3s ease, background 0.3s ease, border-color 0.3s ease`,
             }}
         >
-            {ripple && (
-                <span
-                    className="tx-ripple"
-                    style={{ left: ripple.x, top: ripple.y, background: `${accent}22` }}
-                />
-            )}
-
             <div className="tx-left-bar" />
 
             <div className="tx-badge-col">
                 <div
-                    className={`tx-badge ${isSent ? "badge-sent" : "badge-recv"}`}
+                    className="tx-badge badge-sent"
                     style={
                         !hovered
                             ? {
@@ -133,23 +126,14 @@ function TxRow({ tx, index }) {
                             boxShadow: hovered ? `0 0 8px ${accent}` : "none",
                         }}
                     />
-                    <span>{isSent ? "SENT" : "RECV"}</span>
+                    <span>SENT</span>
                 </div>
-                {isSent ? (
-                    <div
-                        className="tx-arrow-icon sent-arrow"
-                        style={{ color: hovered ? undefined : "#4a5568" }}
-                    >
-                        ↑
-                    </div>
-                ) : (
-                    <div
-                        className="tx-arrow-icon recv-arrow"
-                        style={{ color: hovered ? undefined : "#4a5568" }}
-                    >
-                        ↓
-                    </div>
-                )}
+                <div
+                    className="tx-arrow-icon sent-arrow"
+                    style={{ color: hovered ? undefined : "#4a5568" }}
+                >
+                    ↑
+                </div>
             </div>
 
             <div className="tx-addr-col">
@@ -167,7 +151,7 @@ function TxRow({ tx, index }) {
                     transform: "translateX(-100px)",
                 }}
             >
-                {isSent ? "→" : "←"}
+                →
             </div>
 
             <div className="tx-addr-col">
@@ -179,13 +163,7 @@ function TxRow({ tx, index }) {
 
             <div className="tx-amount-col">
                 <div className="tx-col-label label-amount">AMOUNT</div>
-                <div
-                    className="tx-amount"
-                    style={{
-                        color: hovered ? "#ffffff" : "#4a5568",
-                        textShadow: "none",
-                    }}
-                >
+                <div className="tx-amount" style={{ color: hovered ? "#ffffff" : "#4a5568" }}>
                     {formatEth(tx.amount)}
                     <span className="eth-label"> ETH</span>
                 </div>
@@ -230,16 +208,62 @@ function EmptyState() {
     return (
         <div className="empty-state">
             <div className="empty-icon">◈</div>
-            <div className="empty-title"> NO TRANSACTIONS FOUND</div>
-            <div className="empty-sub">Your on-chain history will appear here</div>
+            <div className="empty-title">NO SENT TRANSACTIONS FOUND</div>
+            <div className="empty-sub">Transactions you send will appear here</div>
         </div>
     )
 }
 
-export default function Transactions({ walletAddress }) {
+export default function SentPage() {
+    const router = useRouter()
+    const [checking, setChecking] = useState(true)
+    const [walletAddress, setWalletAddress] = useState(null)
     const [transactions, setTransactions] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+
+    useEffect(() => {
+        const saved = localStorage.getItem("wallet")
+        if (saved) setWalletAddress(saved)
+    }, [])
+
+    useEffect(() => {
+        const check = async () => {
+            const token = sessionStorage.getItem("session")
+            if (!token) {
+                router.push("/enterpin")
+                return
+            }
+            if (!window.ethereum) {
+                router.push("/")
+                return
+            }
+            const accounts = await window.ethereum.request({ method: "eth_accounts" })
+            if (!accounts || accounts.length === 0) {
+                router.push("/")
+                return
+            }
+            const address = accounts[0]
+            try {
+                const isRegistered = await checkIfRegistered(address)
+                if (!isRegistered) {
+                    router.push("/")
+                    return
+                }
+                const hasPinSet = await checkHasPinSet(address)
+                if (!hasPinSet) {
+                    router.push("/setpin")
+                    return
+                }
+                setWalletAddress(address)
+                setChecking(false)
+            } catch (e) {
+                console.log(e)
+                router.push("/")
+            }
+        }
+        check()
+    }, [])
 
     useEffect(() => {
         if (!walletAddress) return
@@ -272,82 +296,81 @@ export default function Transactions({ walletAddress }) {
         fetchData()
     }, [walletAddress])
 
-    const totalSent = transactions.filter((tx) => Number(tx.txType) === 0)
-    const totalReceived = transactions.filter((tx) => Number(tx.txType) === 1)
-    const totalEthSent = totalSent.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0)
+    const sentTxs = transactions.filter((tx) => Number(tx.txType) === 0)
+    const totalEthSent = sentTxs.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0)
+    const totalGas = sentTxs.reduce((sum, tx) => sum + parseFloat(tx.gasFeeUsd || 0), 0)
 
     return (
-        <div className="tx-page">
-            <div className="scan-beam" />
+        <>
+            <ShootingStars />
+            <Navbar activeTab="sent" setActiveTab={() => {}} />
+            <div className="tx-page" style={{ paddingTop: "120px" }}>
+                <div className="scan-beam" />
 
-            <div className="tx-inner">
-                <div className="tx-header">
-                    <div>
-                        <div className="tx-title">TRANSACTION HISTORY</div>
-                        <div className="tx-subtitle">
-                            {walletAddress
-                                ? `${shortenAddr(walletAddress)} · ${transactions.length} records`
-                                : "connecting..."}
+                <div className="tx-inner">
+                    <div className="tx-header">
+                        <div>
+                            <div className="tx-title">SENT TRANSACTIONS</div>
+                            <div className="tx-subtitle">
+                                {walletAddress
+                                    ? `${shortenAddr(walletAddress)} · ${sentTxs.length} records`
+                                    : "connecting..."}
+                            </div>
                         </div>
+                        <div className="live-dot">LIVE</div>
                     </div>
-                    <div className="live-dot">LIVE</div>
-                </div>
 
-                <div className="stat-grid">
-                    <StatCard
-                        label="Total Transactions"
-                        value={loading ? "—" : transactions.length}
-                        accent="#a78bfa"
-                        delay={0}
-                        Icon={Zap}
-                    />
-                    <StatCard
-                        label="Total Sent"
-                        value={loading ? "—" : `${totalSent.length} txns`}
-                        accent="#f59e0b"
-                        delay={80}
-                        Icon={Send}
-                    />
-                    <StatCard
-                        label="Total Received"
-                        value={loading ? "—" : `${totalReceived.length} txns`}
-                        accent="#22c55e"
-                        delay={160}
-                        Icon={Download}
-                    />
-                    <StatCard
-                        label="ETH Sent"
-                        value={loading ? "—" : `${totalEthSent.toFixed(4)} ETH`}
-                        accent="#38bdf8"
-                        delay={240}
-                        Icon={Gem}
-                    />
-                </div>
-
-                <div className="tx-table-header">
-                    {["TYPE", "FROM", "", "TO", "AMOUNT", "GAS", "BLOCK", "TIME"].map((h, i) => (
-                        <div key={i} className="th-label">
-                            {h}
-                        </div>
-                    ))}
-                </div>
-                <div className="tx-sep" />
-
-                {error && <div className="tx-error">{error}</div>}
-                {!error &&
-                    loading &&
-                    Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)}
-                {!error && !loading && transactions.length === 0 && <EmptyState />}
-                {!error &&
-                    !loading &&
-                    transactions.map((tx, i) => (
-                        <TxRow
-                            key={tx.hash || `${tx.from}-${tx.timeStamp}-${i}`}
-                            tx={tx}
-                            index={i}
+                    <div className="stat-grid">
+                        <StatCard
+                            label="Total Sent"
+                            value={loading ? "—" : `${sentTxs.length} txns`}
+                            accent="#f59e0b"
+                            delay={0}
+                            Icon={Send}
                         />
-                    ))}
+                        <StatCard
+                            label="ETH Sent"
+                            value={loading ? "—" : `${totalEthSent.toFixed(4)} ETH`}
+                            accent="#38bdf8"
+                            delay={80}
+                            Icon={Gem}
+                        />
+                        <StatCard
+                            label="Gas Spent"
+                            value={loading ? "—" : `$${totalGas.toFixed(2)}`}
+                            accent="#a78bfa"
+                            delay={160}
+                            Icon={Zap}
+                        />
+                    </div>
+
+                    <div className="tx-table-header">
+                        {["TYPE", "FROM", "", "TO", "AMOUNT", "GAS", "BLOCK", "TIME"].map(
+                            (h, i) => (
+                                <div key={i} className="th-label">
+                                    {h}
+                                </div>
+                            ),
+                        )}
+                    </div>
+                    <div className="tx-sep" />
+
+                    {error && <div className="tx-error">{error}</div>}
+                    {!error &&
+                        loading &&
+                        Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)}
+                    {!error && !loading && sentTxs.length === 0 && <EmptyState />}
+                    {!error &&
+                        !loading &&
+                        sentTxs.map((tx, i) => (
+                            <TxRow
+                                key={tx.hash || `${tx.from}-${tx.timeStamp}-${i}`}
+                                tx={tx}
+                                index={i}
+                            />
+                        ))}
+                </div>
             </div>
-        </div>
+        </>
     )
 }

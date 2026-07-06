@@ -133,7 +133,6 @@ export default function SetPinNewWallet({ onSuccess, onBack }) {
             setLoading(false)
             setSuccess(true)
             setTimeout(() => {
-                sessionStorage.setItem("pinVerified", "true")
                 onSuccess?.()
             }, 1100)
         } catch (err) {

@@ -299,35 +299,32 @@
     position: relative;
     overflow: hidden;
     cursor: default;
-    border: 1px solid transparent;
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-left: 2px solid transparent;
 }
+
 .tx-sent {
-    background: rgba(245, 158, 11, 0.04);
-    border-color: rgba(245, 158, 11, 0.1);
+    background: rgba(245, 158, 11, 0.015);
+    border-color: rgba(245, 158, 11, 0.05);
     border-left-color: rgba(245, 158, 11, 0.4);
 }
 .tx-recv {
-    background: rgba(34, 197, 94, 0.04);
-    border-color: rgba(34, 197, 94, 0.1);
+    background: rgba(34, 197, 94, 0.015);
+    border-color: rgba(34, 197, 94, 0.05);
     border-left-color: rgba(34, 197, 94, 0.4);
 }
 .tx-sent.tx-row-hovered {
-    background: rgba(245, 158, 11, 0.09);
-    border-color: rgba(245, 158, 11, 0.3);
-    border-left-color: #f59e0b;
-    box-shadow:
-        0 4px 32px rgba(245, 158, 11, 0.15),
-        inset 0 0 40px rgba(245, 158, 11, 0.03);
+    background: rgba(245, 158, 11, 0.04);
+    border: 1px solid #f59e0b;
+    border-left: 2px solid #f59e0b;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
     animation: sentGlow 2s ease infinite;
 }
 .tx-recv.tx-row-hovered {
-    background: rgba(34, 197, 94, 0.09);
-    border-color: rgba(34, 197, 94, 0.3);
-    border-left-color: #22c55e;
-    box-shadow:
-        0 4px 32px rgba(34, 197, 94, 0.15),
-        inset 0 0 40px rgba(34, 197, 94, 0.03);
+    background: rgba(34, 197, 94, 0.04);
+    border: 1px solid #22c55e;
+    border-left: 2px solid #22c55e;
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
     animation: recvGlow 2s ease infinite;
 }
 

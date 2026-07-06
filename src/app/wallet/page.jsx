@@ -14,12 +14,12 @@ export default function WalletPage() {
     const [walletAddress, setWalletAddress] = useState(null)
 
     useEffect(() => {
+        const token = sessionStorage.getItem("session")
+        if (!token) {
+            router.push("/enterpin")
+            return
+        }
         const check = async () => {
-            const pinVerified = sessionStorage.getItem("pinVerified")
-            if (!pinVerified) {
-                router.push("/enterpin")
-                return
-            }
             if (!window.ethereum) {
                 router.push("/")
                 return
