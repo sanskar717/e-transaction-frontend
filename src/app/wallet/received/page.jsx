@@ -313,28 +313,31 @@ export default function ReceivedPage() {
                         <div className="live-dot">LIVE</div>
                     </div>
 
-                    <div className="stat-grid">
-                        <StatCard
-                            label="Total Received"
-                            value={loading ? "—" : `${receivedTxs.length} txns`}
-                            accent="#22c55e"
-                            delay={0}
-                            Icon={Download}
-                        />
-                        <StatCard
-                            label="ETH Received"
-                            value={loading ? "—" : `${totalEthReceived.toFixed(4)} ETH`}
-                            accent="#38bdf8"
-                            delay={80}
-                            Icon={Gem}
-                        />
-                        <StatCard
-                            label="Gas Spent"
-                            value={loading ? "—" : `$${totalGas.toFixed(2)}`}
-                            accent="#a78bfa"
-                            delay={160}
-                            Icon={Zap}
-                        />
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: "20px",
+                            marginBottom: "32px",
+                        }}
+                    >
+                        <div style={{ width: "500px", flexShrink: 0 }}>
+                            <StatCard
+                                label="Total Received"
+                                value={loading ? "—" : `${receivedTxs.length} txns`}
+                                accent="#22c55e"
+                                delay={0}
+                                Icon={Download}
+                            />
+                        </div>
+                        <div style={{ width: "500px", flexShrink: 0 }}>
+                            <StatCard
+                                label="ETH Received"
+                                value={loading ? "—" : `${totalEthReceived.toFixed(4)} ETH`}
+                                accent="#38bdf8"
+                                delay={80}
+                                Icon={Gem}
+                            />
+                        </div>
                     </div>
 
                     <div className="tx-table-header">

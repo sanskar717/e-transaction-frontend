@@ -241,27 +241,33 @@ export default function Transactions({ walletAddress }) {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
+    const [refreshCooldown, setRefreshCooldown] = useState(() => {
+        const lastRefresh = sessionStorage.getItem("lastTxRefresh")
+        if (!lastRefresh) return false
+        return Date.now() - parseInt(lastRefresh) < 120000
+    })
+
+    async function fetchTxData(addr, force = false) {
+        const cacheKey = `txCache_${addr}`
+        if (!force) {
+            const cached = sessionStorage.getItem(cacheKey)
+            if (cached) return JSON.parse(cached)
+        }
+        const res = await fetch(`/api/transactions?address=${addr}`)
+        const data = await res.json()
+        if (data.error) throw new Error(data.error)
+        sessionStorage.setItem(cacheKey, JSON.stringify(data.transactions))
+        return data.transactions
+    }
+
     useEffect(() => {
         if (!walletAddress) return
-
-        const cacheKey = `txCache_${walletAddress}`
-        const cached = sessionStorage.getItem(cacheKey)
-
-        if (cached) {
-            setTransactions(JSON.parse(cached))
-            setLoading(false)
-            return
-        }
-
-        async function fetchData() {
+        async function load() {
             try {
                 setLoading(true)
                 setError(null)
-                const res = await fetch(`/api/transactions?address=${walletAddress}`)
-                const data = await res.json()
-                if (data.error) throw new Error(data.error)
-                setTransactions(data.transactions)
-                sessionStorage.setItem(cacheKey, JSON.stringify(data.transactions))
+                const data = await fetchTxData(walletAddress)
+                setTransactions(data)
             } catch (err) {
                 console.error(err)
                 setError("Failed to fetch transactions.")
@@ -269,8 +275,39 @@ export default function Transactions({ walletAddress }) {
                 setLoading(false)
             }
         }
-        fetchData()
+        load()
     }, [walletAddress])
+
+    async function handleRefresh() {
+        if (!walletAddress || refreshCooldown) return
+        setRefreshCooldown(true)
+        sessionStorage.setItem("lastTxRefresh", Date.now().toString())
+        try {
+            setLoading(true)
+            setError(null)
+            const data = await fetchTxData(walletAddress, true)
+            setTransactions(data)
+        } catch (err) {
+            console.error(err)
+            setError("Failed to fetch transactions.")
+        } finally {
+            setLoading(false)
+        }
+        setTimeout(() => setRefreshCooldown(false), 120000)
+    }
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const lastRefresh = sessionStorage.getItem("lastTxRefresh")
+            if (!lastRefresh) {
+                setRefreshCooldown(false)
+                return
+            }
+            const stillCooling = Date.now() - parseInt(lastRefresh) < 120000
+            setRefreshCooldown(stillCooling)
+        }, 5000)
+        return () => clearInterval(interval)
+    }, [])
 
     const totalSent = transactions.filter((tx) => Number(tx.txType) === 0)
     const totalReceived = transactions.filter((tx) => Number(tx.txType) === 1)
@@ -290,7 +327,36 @@ export default function Transactions({ walletAddress }) {
                                 : "connecting..."}
                         </div>
                     </div>
-                    <div className="live-dot">LIVE</div>
+                    <div
+                        style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-end",
+                            gap: "4px",
+                        }}
+                    >
+                        <div
+                            className="live-dot"
+                            onClick={handleRefresh}
+                            style={{
+                                cursor: refreshCooldown ? "not-allowed" : "pointer",
+                                opacity: refreshCooldown ? 0.5 : 1,
+                            }}
+                        >
+                            LIVE
+                        </div>
+                        {refreshCooldown && (
+                            <div
+                                style={{
+                                    fontSize: "12px",
+                                    letterSpacing: "1px",
+                                    color: "#94a3b8",
+                                }}
+                            >
+                                Wait 2 min for next refresh
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <div className="stat-grid">

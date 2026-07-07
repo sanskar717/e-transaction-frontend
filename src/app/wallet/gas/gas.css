@@ -1,0 +1,258 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Orbitron:wght@400;700;900&display=swap");
+
+@keyframes gasFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(28px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@keyframes gasBorderRotate {
+    0% {
+        background-position: 0% 50%;
+    }
+    100% {
+        background-position: 200% 50%;
+    }
+}
+@keyframes gasGlow {
+    0%,
+    100% {
+        text-shadow: 0 0 18px rgba(245, 158, 11, 0.5);
+    }
+    50% {
+        text-shadow:
+            0 0 40px rgba(245, 158, 11, 0.95),
+            0 0 70px rgba(245, 158, 11, 0.4);
+    }
+}
+
+.gas-page {
+    font-family: "Space Mono", monospace;
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    padding-bottom: 80px;
+}
+
+.gas-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 40px;
+}
+
+.gas-header {
+    margin-bottom: 28px;
+    animation: gasFadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.gas-title {
+    font-family: "Orbitron", monospace;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: #fff;
+}
+.gas-subtitle {
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.35);
+    margin-top: 6px;
+}
+
+/* ─── TWO COLUMN LAYOUT ─── */
+.gas-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 24px;
+    align-items: start;
+}
+
+.gas-list-col {
+    min-width: 0;
+}
+
+.gas-total-col {
+    position: sticky;
+    top: 140px;
+}
+
+/* ─── TOTAL GAS CARD — always glowing, no hover needed ─── */
+.gas-total-card {
+    background: linear-gradient(145deg, rgba(245, 158, 11, 0.14) 0%, rgba(0, 0, 0, 0) 65%);
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    border-radius: 16px;
+    padding: 30px 26px;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+        0 0 40px rgba(245, 158, 11, 0.18),
+        inset 0 0 40px rgba(245, 158, 11, 0.04);
+    transition:
+        transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 0.6s ease;
+}
+.gas-total-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    padding: 1px;
+    background: linear-gradient(90deg, transparent, #f59e0b, transparent, #f59e0baa, transparent);
+    background-size: 200% 100%;
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: gasBorderRotate 2.5s linear infinite;
+    pointer-events: none;
+}
+
+.gas-total-corner {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 72px;
+    height: 72px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), transparent);
+    border-radius: 0 16px 0 72px;
+}
+
+.gas-total-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f59e0b;
+    margin-bottom: 20px;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+}
+.gas-total-label {
+    font-size: 12px;
+    font-family: snas-serif;
+    letter-spacing: 2px;
+    color: #f59e0b;
+    margin-bottom: 10px;
+    line-height: 1.6;
+}
+.gas-total-value {
+    font-family: sans-serif;
+    font-size: 20px;
+    font-weight: 900;
+    color: white;
+}
+
+/* ─── TABLE HEADER ─── */
+.gas-table-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    padding: 0 20px 10px;
+}
+.gas-th {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, 0.3);
+}
+.gas-sep {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.06);
+    margin-bottom: 6px;
+}
+
+/* ─── ROWS ─── */
+.gas-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    align-items: center;
+    padding: 16px 20px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.012);
+    margin-bottom: 6px;
+}
+.gas-col-label {
+    display: none;
+}
+.gas-addr-val {
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.55);
+}
+.gas-fee-val {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #f59e0b;
+}
+.gas-time-val {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* ─── SKELETON ─── */
+.gas-skeleton-row {
+    display: flex;
+    gap: 24px;
+    padding: 16px 20px;
+}
+.gas-skeleton-cell {
+    height: 14px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    animation: gasPulseSkel 1.4s ease-in-out infinite;
+}
+@keyframes gasPulseSkel {
+    0%,
+    100% {
+        opacity: 0.4;
+    }
+    50% {
+        opacity: 0.9;
+    }
+}
+
+/* ─── EMPTY ─── */
+.gas-empty {
+    text-align: center;
+    padding: 60px 20px;
+}
+.gas-empty-icon {
+    font-size: 30px;
+    color: rgba(245, 158, 11, 0.4);
+    margin-bottom: 12px;
+}
+.gas-empty-title {
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 6px;
+}
+.gas-empty-sub {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.2);
+}
+
+.gas-error {
+    color: #f59e0b;
+    padding: 20px;
+    text-align: center;
+    font-size: 12px;
+}
+
+/* ─── RESPONSIVE — stack on small screens ─── */
+@media (max-width: 900px) {
+    .gas-layout {
+        grid-template-columns: 1fr;
+    }
+    .gas-total-col {
+        position: static;
+    }
+}

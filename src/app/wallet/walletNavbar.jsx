@@ -246,6 +246,10 @@ export default function Navbar({ activeTab, setActiveTab }) {
                                     router.push("/wallet/received")
                                 } else if (item.key === "transactions") {
                                     router.push("/wallet")
+                                } else if (item.key === "gas") {
+                                    router.push("/wallet/gas")
+                                } else if (item.key === "subscription") {
+                                    router.push("/wallet/subscription")
                                 } else {
                                     setActiveTab(item.key)
                                 }
