@@ -227,9 +227,13 @@ export default function AccountPage() {
                                     className="update-input"
                                     value={newUsername}
                                     onChange={(e) => {
-                                        setNewUsername(e.target.value)
+                                        const onlyLetters = e.target.value.replace(
+                                            /[^a-zA-Z]/g,
+                                            "",
+                                        )
+                                        setNewUsername(onlyLetters)
                                         setUsernameMsg(null)
-                                        const chars = "0123456789!@#$%^&*"
+                                        const chars = "0123456789~!@$%&#^"
                                         const s = Array.from(
                                             { length: 4 },
                                             () => chars[Math.floor(Math.random() * chars.length)],
@@ -274,7 +278,7 @@ export default function AccountPage() {
 
                         {/* Danger Zone */}
                         <div className="danger-card acc-panel">
-                            <div className="danger-label">⚠ DANGER ZONE</div>
+                            <div className="danger-label">⚠ Remove Wallet</div>
                             <div className="danger-desc">
                                 These actions are permanent and cannot be undone. Proceed with
                                 caution.
@@ -289,14 +293,14 @@ export default function AccountPage() {
                                     gap: "12px",
                                 }}
                             >
-                                <div className="tracking-tile">
+                                {/* <div className="tracking-tile">
                                     <div className="tile-label">TRACKING</div>
                                     <div className="tile-desc">
                                         Pause transaction tracking without removing your
                                         registration.
                                     </div>
                                     <button className="stop-btn">STOP TRACKING</button>
-                                </div>
+                                </div> */}
 
                                 <div
                                     className={`remove-tile${confirmRemove ? " confirming" : ""}`}

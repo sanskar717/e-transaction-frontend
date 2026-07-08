@@ -310,7 +310,18 @@ export default function SentPage() {
                 <div className="tx-inner">
                     <div className="tx-header">
                         <div>
-                            <div className="tx-title">SENT TRANSACTIONS</div>
+                            <div
+                                className="tx-title"
+                                style={{
+                                    background:
+                                        "linear-gradient(90deg, #fff 0%, #ef4444 150%, #f87171 100%)",
+                                    WebkitBackgroundClip: "text",
+                                    backgroundClip: "text",
+                                    WebkitTextFillColor: "transparent",
+                                }}
+                            >
+                                SENT TRANSACTIONS
+                            </div>
                             <div className="tx-subtitle">
                                 {walletAddress
                                     ? `${shortenAddr(walletAddress)} · ${sentTxs.length} records`

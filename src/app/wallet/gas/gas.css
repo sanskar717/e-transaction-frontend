@@ -53,7 +53,10 @@
     font-size: 28px;
     font-weight: 900;
     letter-spacing: 3px;
-    color: #fff;
+    background: linear-gradient(90deg, #fff 0%, #f59e0b 60%, #fbbf24 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 .gas-subtitle {
     font-size: 12px;
@@ -177,13 +180,32 @@
     background: rgba(255, 255, 255, 0.012);
     margin-bottom: 6px;
 }
+.gas-row:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(245, 158, 11, 0.25);
+}
+.gas-row:hover .gas-addr-val {
+    color: #fff;
+}
+.gas-row > .gas-cell.gas-addr:first-child .gas-addr-val::after {
+    content: "→";
+    margin-left: 40px;
+    color: rgba(245, 158, 11, 0.6);
+    font-size: 12px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+}
 .gas-col-label {
     display: none;
 }
 .gas-addr-val {
+    display: flex;
+    align-items: center;
     font-size: 13px;
     letter-spacing: 1px;
     color: rgba(255, 255, 255, 0.55);
+    transition: color 0.2s ease;
 }
 .gas-fee-val {
     display: flex;
@@ -195,8 +217,12 @@
 .gas-time-val {
     font-size: 12px;
     color: rgba(255, 255, 255, 0.4);
+    transition: color 0.2s ease;
 }
-
+.gas-row:hover .gas-addr-val,
+.gas-row:hover .gas-time-val {
+    color: #fff;
+}
 /* ─── SKELETON ─── */
 .gas-skeleton-row {
     display: flex;

@@ -154,19 +154,17 @@
     flex-direction: column;
     gap: 14px;
 }
-
 /* ─── IDENTITY CARD ─── */
 .identity-card {
-    background: rgba(255, 255, 255, 0.015);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(145deg, rgba(255, 107, 53, 0.14) 0%, rgba(0, 0, 0, 0) 65%);
+    border: 1px solid transparent;
     border-radius: 16px;
     padding: 30px 26px;
     position: relative;
     overflow: hidden;
-    transition:
-        border-color 0.35s,
-        background 0.35s,
-        box-shadow 0.35s;
+    box-shadow:
+        0 0 40px rgba(255, 107, 53, 0.18),
+        inset 0 0 40px rgba(255, 107, 53, 0.04);
 }
 .identity-card::before {
     content: "";
@@ -181,43 +179,30 @@
         linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
-    opacity: 0;
-    transition: opacity 0.4s;
     animation: borderRotate 2.5s linear infinite;
     pointer-events: none;
 }
-.identity-card:hover::before {
-    opacity: 1;
-}
-.identity-card:hover {
-    border-color: transparent;
-    background: linear-gradient(145deg, rgba(255, 107, 53, 0.14) 0%, rgba(0, 0, 0, 0) 65%);
-    box-shadow:
-        0 0 40px rgba(255, 107, 53, 0.18),
-        inset 0 0 40px rgba(255, 107, 53, 0.04);
-}
-.identity-card:hover .card-label {
+.identity-card .card-label {
     color: #ff6b35;
     animation: flickerIn 0.4s ease both;
 }
-.identity-card:hover .identity-name {
+.identity-card .identity-name {
     color: #ff6b35;
     animation: glowOrange 2s ease-in-out infinite;
 }
-.identity-card:hover .identity-sub {
+.identity-card .identity-sub {
     color: #ffffff;
 }
-.identity-card:hover .identity-date {
+.identity-card .identity-date {
     color: #ffffff;
 }
-.identity-card:hover .identity-avatar {
+.identity-card .identity-avatar {
     color: #ff6b35;
     background: rgba(255, 107, 53, 0.2);
     border-color: rgba(255, 107, 53, 0.3);
     box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
     animation: avatarPulse 2s ease-in-out infinite;
 }
-
 .identity-corner {
     position: absolute;
     top: 0;
@@ -226,11 +211,7 @@
     height: 72px;
     background: linear-gradient(135deg, rgba(255, 107, 53, 0.22), transparent);
     border-radius: 0 16px 0 72px;
-    opacity: 0;
-    transition: opacity 0.35s;
-}
-.identity-card:hover .identity-corner {
-    opacity: 1.6;
+    opacity: 1;
 }
 
 .identity-avatar {
@@ -302,38 +283,34 @@
         box-shadow 0.3s;
     cursor: default;
 }
-.status-pill:hover {
+.status-pill {
     border-color: rgba(34, 197, 94, 0.55);
     background: rgba(34, 197, 94, 0.09);
     box-shadow: 0 0 24px rgba(34, 197, 94, 0.18);
 }
-.status-pill:hover .status-dot {
+.status-pill .status-dot {
     animation: greenPulse 1.2s ease-in-out infinite;
 }
-.status-pill:hover .status-text {
+.status-pill .status-text {
     color: #22c55e;
+}
+.status-pill:hover {
+    background: rgba(0, 0, 0, 0.4);
 }
 
 .status-dot {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.24);
-    box-shadow: none;
-    flex-shrink: 0;
-    transition:
-        background 0.3s,
-        box-shadow 0.3s;
-}
-.status-pill:hover .status-dot {
     background: #22c55e;
     box-shadow: 0 0 8px #22c55e;
+    flex-shrink: 0;
 }
 .status-text {
     font-size: 10px;
     letter-spacing: 3px;
     color: rgba(255, 255, 255, 0.28);
-    font-family: "Space Mono", monospace;
+    font-family: serif;
     transition: color 0.3s;
 }
 
@@ -356,44 +333,23 @@
 
 /* ─── WALLET ADDRESS CARD ─── */
 .wallet-card {
-    background: rgba(255, 255, 255, 0.012);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(56, 189, 248, 0.07);
+    border: 1px solid rgba(56, 189, 248, 0.55);
+    box-shadow: 0 0 30px rgba(56, 189, 248, 0.12);
     position: relative;
     overflow: hidden;
 }
-.wallet-card::after {
-    content: "";
-    position: absolute;
-    top: -50%;
-    left: -60%;
-    width: 40%;
-    height: 200%;
-    background: linear-gradient(to right, transparent, rgba(56, 189, 248, 0.06), transparent);
-    transform: skewX(-20deg);
-    transition: none;
-    opacity: 0;
-}
-.wallet-card:hover::after {
-    opacity: 1;
-    left: 130%;
-    transition:
-        left 0.65s ease,
-        opacity 0.1s;
-}
-.wallet-card:hover {
-    border-color: rgba(56, 189, 248, 0.55);
-    background: rgba(56, 189, 248, 0.07);
-    box-shadow: 0 0 30px rgba(56, 189, 248, 0.12);
-}
-.wallet-card:hover .wallet-addr {
+.wallet-card .wallet-addr {
     color: #fff;
     text-shadow:
         0 0 12px rgba(56, 189, 248, 0.5),
         0 0 30px rgba(56, 189, 248, 0.25);
 }
-.wallet-card:hover .card-label {
+.wallet-card .card-label {
     color: #38bdf8;
-    animation: flickerIn 0.35s ease both;
+}
+.wallet-card:hover {
+    background: rgba(0, 0, 0, 0.35);
 }
 
 .wallet-addr {
@@ -427,31 +383,25 @@
     transform: skewX(-20deg);
     opacity: 0;
 }
-.username-card:hover::after {
-    opacity: 1;
-    left: 130%;
-    transition:
-        left 0.65s ease,
-        opacity 0.1s;
-}
-.username-card:hover {
+.username-card {
     border-color: rgba(167, 139, 250, 0.55);
     background: rgba(167, 139, 250, 0.07);
     box-shadow: 0 0 30px rgba(167, 139, 250, 0.12);
 }
-.username-card:hover .card-label {
+.username-card .card-label {
     color: #ffffff;
-    animation: flickerIn 0.35s ease both;
 }
-.username-card:hover .section-title {
+.username-card .section-title {
     color: #a78bfa;
     border-bottom-color: rgba(167, 139, 250, 0.2);
 }
-.username-card:hover .username-val {
+.username-card .username-val {
     color: #ff6b35;
     text-shadow: 0 0 28px rgba(255, 107, 53, 0.8);
 }
-
+.username-card:hover {
+    background: rgba(0, 0, 0, 0.35);
+}
 .username-val {
     font-family: "Orbitron", monospace;
     font-size: 17px;
@@ -562,18 +512,18 @@
 }
 /* ─── LABELS ─── */
 .card-label {
-    font-size: 10px;
+    font-size: 12px;
     letter-spacing: 4px;
     color: rgba(255, 255, 255, 0.25);
-    font-family: "Space Mono", monospace;
+    font-family: serif;
     margin-bottom: 12px;
     transition: color 0.3s;
 }
 .section-title {
-    font-size: 11px;
+    font-size: 12px;
     letter-spacing: 4px;
     color: rgba(255, 255, 255, 0.4);
-    font-family: "Space Mono", monospace;
+    font-family: serif;
     margin-bottom: 18px;
     padding-bottom: 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);

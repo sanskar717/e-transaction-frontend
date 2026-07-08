@@ -303,7 +303,20 @@ export default function ReceivedPage() {
                 <div className="tx-inner">
                     <div className="tx-header">
                         <div>
-                            <div className="tx-title">RECEIVED TRANSACTIONS</div>
+                            <div className="tx-title">
+                                <span style={{ color: "#fff" }}>RECEIVED </span>
+                                <span
+                                    style={{
+                                        background:
+                                            "linear-gradient(90deg, #86efac 0%, #22c55e 130%, #15803d 100%)",
+                                        WebkitBackgroundClip: "text",
+                                        backgroundClip: "text",
+                                        WebkitTextFillColor: "transparent",
+                                    }}
+                                >
+                                    TRANSACTIONS
+                                </span>
+                            </div>
                             <div className="tx-subtitle">
                                 {walletAddress
                                     ? `${shortenAddr(walletAddress)} · ${receivedTxs.length} records`
