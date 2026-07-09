@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",
+    "eth-crypto": "^4.1.0",
     "ethers": "^6.16.0",
     "jose": "^6.2.3",
     "lucide-react": "^1.14.0",

@@ -166,16 +166,7 @@ export default function AccountPage() {
             >
                 <ShootingStars />
             </div>
-            <Navbar
-                activeTab="account"
-                setActiveTab={(tab) => {
-                    if (tab === "transactions") router.push("/wallet")
-                    else if (tab === "sent") router.push("/wallet/sent")
-                    else if (tab === "received") router.push("/wallet/received")
-                    else if (tab === "gas") router.push("/wallet/gas")
-                    else if (tab === "subscription") router.push("/wallet/subscription")
-                }}
-            />
+            <Navbar activeTab="account" setActiveTab={() => {}} />
 
             <div className="acc-root" style={{ position: "relative", zIndex: 1 }}>
                 <div className="acc-grid">

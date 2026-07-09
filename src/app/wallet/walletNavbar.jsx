@@ -9,7 +9,7 @@ const navItems = [
     { label: "Sent", key: "sent", color: "#ef4444" },
     { label: "Received", key: "received", color: "#22c55e" },
     { label: "Total Gas Fees", key: "gas", color: "#f59e0b" },
-    { label: "Subscription", key: "subscription", color: "#a78bfa" },
+    { label: "Messages", key: "messages", color: "#a78bfa" },
     { label: "Account", key: "account", color: "#ffffff" },
 ]
 
@@ -248,8 +248,8 @@ export default function Navbar({ activeTab, setActiveTab }) {
                                     router.push("/wallet")
                                 } else if (item.key === "gas") {
                                     router.push("/wallet/gas")
-                                } else if (item.key === "subscription") {
-                                    router.push("/wallet/subscription")
+                                } else if (item.key === "messages") {
+                                    router.push("/wallet/messages")
                                 } else {
                                     setActiveTab(item.key)
                                 }
