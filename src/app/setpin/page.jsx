@@ -1,11 +1,13 @@
 "use client"
-import { useEffect } from "react"
-import { checkIfRegistered } from "../../config/contracts"
+import { useEffect, useState } from "react"
+import { checkIfRegistered, checkHasPinSet } from "../../config/contracts"
 import SetPinNewWallet from "./SetPinNewWallet"
 import { useRouter } from "next/navigation"
 
 export default function SetPinPage() {
     const router = useRouter()
+    const [skipToPin, setSkipToPin] = useState(false)
+    const [ready, setReady] = useState(false)
 
     useEffect(() => {
         const check = async () => {
@@ -21,20 +23,22 @@ export default function SetPinPage() {
                 }
                 const isRegistered = await checkIfRegistered(accounts[0])
                 if (isRegistered) {
-                    router.push("/enterpin")
-                    return
+                    const hasPinSet = await checkHasPinSet(accounts[0])
+                    if (hasPinSet) {
+                        router.push("/enterpin")
+                        return
+                    }
+                    setSkipToPin(true)
                 }
             } catch (e) {
                 console.log("setpin check error:", e)
             }
+            setReady(true)
         }
         check()
     }, [])
 
-    return (
-        <SetPinNewWallet
-            onSuccess={() => router.push("/enterpin")}
-            onBack={() => router.push("/")}
-        />
-    )
+    if (!ready) return null
+
+    return <SetPinNewWallet skipToPin={skipToPin} onSuccess={() => router.push("/enterpin")} />
 }

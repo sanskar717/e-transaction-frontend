@@ -4,10 +4,10 @@ import ShootingStars from "../../components/ShootingStars"
 import { registerWallet, setPinOnChain } from "../../config/contracts"
 import "./Setpin.css"
 
-export default function SetPinNewWallet({ onSuccess, onBack }) {
+export default function SetPinNewWallet({ onSuccess, skipToPin = false }) {
     const [pin, setPin] = useState(["", "", "", "", ""])
     const [confirmPin, setConfirmPin] = useState(["", "", "", "", ""])
-    const [step, setStep] = useState("username")
+    const [step, setStep] = useState(skipToPin ? "set" : "username")
     const [username, setUsername] = useState("")
     const [usernameError, setUsernameError] = useState("")
     const [error, setError] = useState("")
@@ -110,25 +110,22 @@ export default function SetPinNewWallet({ onSuccess, onBack }) {
 
         setLoading(true)
         try {
-            const chars = "0123456789!@#$%^&*"
-            const suffix = Array.from(
-                { length: 4 },
-                () => chars[Math.floor(Math.random() * chars.length)],
-            ).join("")
-            const finalUsername = `${username.trim()}_${suffix}`
+            if (!skipToPin) {
+                const finalUsername = `${username.trim()}_${previewSuffix}`
+                await registerWallet(finalUsername)
 
-            await registerWallet(finalUsername)
+                const accounts = await window.ethereum.request({ method: "eth_accounts" })
+                await fetch("/api/register-user", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        walletAddress: accounts[0],
+                        username: finalUsername,
+                    }),
+                })
+            }
+
             await setPinOnChain(pin.join(""))
-
-            const accounts = await window.ethereum.request({ method: "eth_accounts" })
-            await fetch("/api/register-user", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    walletAddress: accounts[0],
-                    username: finalUsername,
-                }),
-            })
 
             setLoading(false)
             setSuccess(true)

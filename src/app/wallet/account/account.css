@@ -333,9 +333,9 @@
 
 /* ─── WALLET ADDRESS CARD ─── */
 .wallet-card {
-    background: rgba(56, 189, 248, 0.07);
-    border: 1px solid rgba(56, 189, 248, 0.55);
-    box-shadow: 0 0 30px rgba(56, 189, 248, 0.12);
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.06);
     position: relative;
     overflow: hidden;
 }
@@ -384,9 +384,9 @@
     opacity: 0;
 }
 .username-card {
-    border-color: rgba(167, 139, 250, 0.55);
-    background: rgba(167, 139, 250, 0.07);
-    box-shadow: 0 0 30px rgba(167, 139, 250, 0.12);
+    border-color: rgba(167, 139, 250, 0.3);
+    background: rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 14px rgba(167, 139, 250, 0.06);
 }
 .username-card .card-label {
     color: #ffffff;
