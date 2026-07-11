@@ -11,6 +11,17 @@ import {
 } from "../../../../lib/messageCrypto"
 import "./messages.css"
 
+function timeAgo(timestamp) {
+    const now = Date.now()
+    const ts = new Date(timestamp).getTime()
+    const diff = now - ts
+    if (diff < 60000) return "now"
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m`
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`
+    if (diff < 604800000) return `${Math.floor(diff / 86400000)}d`
+    return new Date(ts).toLocaleDateString()
+}
+
 export default function MessagesPage() {
     const router = useRouter()
     const [checking, setChecking] = useState(true)
@@ -22,10 +33,13 @@ export default function MessagesPage() {
     const [conversations, setConversations] = useState([])
     const [otherWallet, setOtherWallet] = useState("")
     const [activeChat, setActiveChat] = useState(null)
+    const [activeChatUsername, setActiveChatUsername] = useState(null)
     const [messages, setMessages] = useState([])
     const [newMsg, setNewMsg] = useState("")
     const [sending, setSending] = useState(false)
+    const [sendHover, setSendHover] = useState(false)
     const [loadingMsgs, setLoadingMsgs] = useState(false)
+    const [fullscreen, setFullscreen] = useState(false)
     const bottomRef = useRef(null)
     const chatBodyRef = useRef(null)
     const pollRef = useRef(null)
@@ -64,7 +78,7 @@ export default function MessagesPage() {
                 const cached = localStorage.getItem(`msgKey_${addr.toLowerCase()}`)
                 if (cached) setKeypair(JSON.parse(cached))
 
-                const savedChat = sessionStorage.getItem("activeMsgChat")
+                const savedChat = sessionStorage.getItem(`activeMsgChat_${addr.toLowerCase()}`)
                 if (savedChat) setActiveChat(savedChat)
             } catch (e) {
                 console.log(e)
@@ -96,11 +110,34 @@ export default function MessagesPage() {
     }
 
     const loadConversations = async () => {
-        if (!address) return
+        if (!address || !keypair) return
         try {
             const res = await fetch(`/api/get-conversations?address=${address}`)
             const data = await res.json()
-            if (data.conversations) setConversations(data.conversations)
+            if (data.conversations) {
+                const withPreview = await Promise.all(
+                    data.conversations.map(async (c) => {
+                        const isMine = c.last_from_wallet?.toLowerCase() === address.toLowerCase()
+                        const cipherToUse = isMine ? c.last_content_sender : c.last_content
+                        let preview = ""
+                        try {
+                            preview = await decryptMessage(keypair.privateKey, cipherToUse)
+                        } catch {
+                            preview = "⚠ Could not decrypt"
+                        }
+                        if (isMine) preview = `You: ${preview}`
+
+                        const lastSeenKey = `msgSeen_${address.toLowerCase()}_${c.other_wallet}`
+                        const lastSeen = localStorage.getItem(lastSeenKey)
+                        const isUnread =
+                            !isMine &&
+                            (!lastSeen || new Date(c.last_message_at) > new Date(lastSeen))
+
+                        return { ...c, preview, isUnread }
+                    }),
+                )
+                setConversations(withPreview)
+            }
         } catch (e) {
             console.log(e)
         }
@@ -113,11 +150,27 @@ export default function MessagesPage() {
             return
         }
         setActiveChat(clean)
-        sessionStorage.setItem("activeMsgChat", clean)
+        sessionStorage.setItem(`activeMsgChat_${address.toLowerCase()}`, clean)
+        localStorage.setItem(`msgSeen_${address.toLowerCase()}_${clean}`, new Date().toISOString())
         if (!silent) {
             setLoadingMsgs(true)
             setMessages([])
         }
+
+        // Username fetch karo header ke liye
+        try {
+            const existing = conversations.find((c) => c.other_wallet === clean)
+            if (existing?.username) {
+                setActiveChatUsername(existing.username)
+            } else {
+                const uRes = await fetch(`/api/get-username?address=${clean}`)
+                const uData = await uRes.json()
+                setActiveChatUsername(uData.username || null)
+            }
+        } catch (e) {
+            console.log(e)
+        }
+
         try {
             const res = await fetch(`/api/get-messages?address=${address}&with=${clean}`)
             const data = await res.json()
@@ -170,21 +223,39 @@ export default function MessagesPage() {
     }, [messages])
 
     const handleSend = async () => {
-        if (!newMsg.trim() || !activeChat) return
+        const textToSend = newMsg.trim()
+        if (!textToSend || !activeChat || sending) return
+
         setSending(true)
+        setNewMsg("")
+
+        const tempId = `temp-${Date.now()}`
+        setMessages((prev) => [
+            ...prev,
+            {
+                id: tempId,
+                from_wallet: address,
+                to_wallet: activeChat,
+                text: textToSend,
+                created_at: new Date().toISOString(),
+                pending: true,
+            },
+        ])
+
         try {
             const keyRes = await fetch(`/api/get-public-key?address=${activeChat}`)
             const keyData = await keyRes.json()
             if (!keyData.publicKey) {
+                setMessages((prev) => prev.filter((m) => m.id !== tempId))
                 alert("This wallet hasn't set up messaging yet.")
                 setSending(false)
                 return
             }
 
-            const encryptedForReceiver = await encryptMessage(keyData.publicKey, newMsg.trim())
-            const encryptedForSender = await encryptMessage(keypair.publicKey, newMsg.trim())
+            const encryptedForReceiver = await encryptMessage(keyData.publicKey, textToSend)
+            const encryptedForSender = await encryptMessage(keypair.publicKey, textToSend)
 
-            await fetch("/api/send-message", {
+            const sendRes = await fetch("/api/send-message", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -194,21 +265,18 @@ export default function MessagesPage() {
                     encryptedContentSender: encryptedForSender,
                 }),
             })
+            const sendData = await sendRes.json()
+            if (!sendData.success) throw new Error("send failed")
 
-            setMessages((prev) => [
-                ...prev,
-                {
-                    from_wallet: address,
-                    to_wallet: activeChat,
-                    text: newMsg.trim(),
-                    created_at: new Date().toISOString(),
-                },
-            ])
-            setNewMsg("")
+            setMessages((prev) =>
+                prev.map((m) => (m.id === tempId ? { ...m, pending: false } : m)),
+            )
             loadConversations()
         } catch (e) {
             console.log(e)
-            alert("Failed to send message.")
+            setMessages((prev) =>
+                prev.map((m) => (m.id === tempId ? { ...m, failed: true, pending: false } : m)),
+            )
         }
         setSending(false)
     }
@@ -245,107 +313,232 @@ export default function MessagesPage() {
                             {keyError && <div className="msg-error">{keyError}</div>}
                         </div>
                     ) : (
-                        <div className="msg-layout">
-                            <div className="msg-sidebar">
-                                <div className="msg-sidebar-title">NEW CONVERSATION</div>
-                                <input
-                                    className="msg-input-wallet"
-                                    placeholder="0x wallet address"
-                                    value={otherWallet}
-                                    onChange={(e) => setOtherWallet(e.target.value)}
-                                    onKeyDown={(e) => e.key === "Enter" && openChat(otherWallet)}
-                                />
-                                <button
-                                    className="msg-open-btn"
-                                    onClick={() => openChat(otherWallet)}
-                                >
-                                    OPEN CHAT →
-                                </button>
-
-                                <div className="msg-inbox-title">INBOX</div>
-                                <div className="msg-inbox-list">
-                                    {conversations.length === 0 && (
-                                        <div className="msg-inbox-empty">No conversations yet</div>
-                                    )}
-                                    {conversations.map((c) => (
-                                        <div
-                                            key={c.other_wallet}
-                                            className={`msg-inbox-item ${
-                                                activeChat === c.other_wallet ? "active" : ""
-                                            }`}
-                                            onClick={() => openChat(c.other_wallet)}
-                                        >
-                                            <div className="msg-inbox-avatar">
-                                                {c.other_wallet.slice(2, 4).toUpperCase()}
-                                            </div>
-                                            <div className="msg-inbox-addr">
-                                                {c.other_wallet.slice(0, 6)}...
-                                                {c.other_wallet.slice(-4)}
-                                            </div>
+                        <div className={`msg-content ${fullscreen ? "msg-fullscreen" : ""}`}>
+                            <div className="msg-page-header">
+                                <div className="msg-page-header-row">
+                                    <div>
+                                        <div className="msg-page-title">MESSAGES</div>
+                                        <div className="msg-page-sub">
+                                            {address.slice(0, 6)}...{address.slice(-4)} ·{" "}
+                                            {conversations.length} conversation
+                                            {conversations.length === 1 ? "" : "s"}
                                         </div>
-                                    ))}
+                                    </div>
+                                    <button
+                                        className="msg-fullscreen-btn"
+                                        onClick={() => setFullscreen((f) => !f)}
+                                    >
+                                        {fullscreen ? "⤡ CLOSE" : "⤢ EXPAND"}
+                                    </button>
                                 </div>
                             </div>
+                            <div className="msg-layout">
+                                <div className="msg-sidebar">
+                                    <div className="msg-sidebar-title">NEW CONVERSATION</div>
+                                    <input
+                                        className="msg-input-wallet"
+                                        placeholder="0x wallet address"
+                                        value={otherWallet}
+                                        onChange={(e) => setOtherWallet(e.target.value)}
+                                        onKeyDown={(e) =>
+                                            e.key === "Enter" && openChat(otherWallet)
+                                        }
+                                    />
+                                    <button
+                                        className="msg-open-btn"
+                                        onClick={() => openChat(otherWallet)}
+                                    >
+                                        <span className="skew-fill-left" />
+                                        <span className="skew-fill-right" />
+                                        <span className="msg-open-btn-text">OPEN CHAT →</span>
+                                    </button>
 
-                            <div className="msg-chat">
-                                {!activeChat ? (
-                                    <div className="msg-empty">
-                                        Enter a wallet address to start a conversation
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div className="msg-chat-header">
-                                            <div className="msg-chat-avatar">
-                                                {activeChat.slice(2, 4).toUpperCase()}
+                                    <div className="msg-inbox-title">INBOX</div>
+                                    <div className="msg-inbox-list">
+                                        {conversations.length === 0 && (
+                                            <div className="msg-inbox-empty">
+                                                No conversations yet
                                             </div>
-                                            <div>
-                                                {activeChat.slice(0, 6)}...{activeChat.slice(-4)}
-                                            </div>
-                                        </div>
-                                        <div className="msg-chat-body">
-                                            {loadingMsgs && (
-                                                <div className="msg-empty">Loading...</div>
-                                            )}
-                                            {!loadingMsgs && messages.length === 0 && (
-                                                <div className="msg-empty">
-                                                    No messages yet. Say hi!
+                                        )}
+                                        {conversations.map((c) => (
+                                            <div
+                                                key={c.other_wallet}
+                                                className={`msg-inbox-item ${
+                                                    activeChat === c.other_wallet ? "active" : ""
+                                                }`}
+                                                onClick={() => openChat(c.other_wallet)}
+                                            >
+                                                <div className="msg-inbox-avatar">
+                                                    {c.other_wallet.slice(2, 4).toUpperCase()}
                                                 </div>
-                                            )}
-                                            {messages.map((m, i) => (
-                                                <div
-                                                    key={i}
-                                                    className={`msg-bubble ${
+                                                <div className="msg-inbox-info">
+                                                    <div className="msg-inbox-top-row">
+                                                        <div className="msg-inbox-name">
+                                                            {c.username ||
+                                                                `${c.other_wallet.slice(0, 6)}...${c.other_wallet.slice(-4)}`}
+                                                        </div>
+                                                        <div className="msg-inbox-right">
+                                                            <div className="msg-inbox-time">
+                                                                {timeAgo(c.last_message_at)}
+                                                            </div>
+                                                            {c.isUnread && (
+                                                                <div className="msg-unread-badge">
+                                                                    ●
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="msg-inbox-preview">
+                                                        {c.preview}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="msg-chat">
+                                    {!activeChat ? (
+                                        <div className="msg-empty">
+                                            Enter a wallet address to start a conversation
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="msg-chat-header">
+                                                <div className="msg-chat-avatar">
+                                                    {activeChat.slice(2, 4).toUpperCase()}
+                                                </div>
+                                                <div className="msg-chat-header-info">
+                                                    <div className="msg-chat-header-name">
+                                                        {activeChatUsername ||
+                                                            `${activeChat.slice(0, 6)}...${activeChat.slice(-4)}`}
+                                                    </div>
+                                                    {activeChatUsername && (
+                                                        <div
+                                                            className="msg-chat-header-addr"
+                                                            title="Click to copy"
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(
+                                                                    activeChat,
+                                                                )
+                                                            }}
+                                                        >
+                                                            {activeChat}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="msg-chat-body" ref={chatBodyRef}>
+                                                {loadingMsgs && (
+                                                    <div className="msg-empty">Loading...</div>
+                                                )}
+                                                {!loadingMsgs && messages.length === 0 && (
+                                                    <div className="msg-empty">
+                                                        No messages yet. Say hi!
+                                                    </div>
+                                                )}
+                                                {messages.map((m, i) => {
+                                                    const isMine =
                                                         m.from_wallet?.toLowerCase() ===
                                                         address.toLowerCase()
-                                                            ? "msg-mine"
-                                                            : "msg-theirs"
-                                                    }`}
+                                                    const prev = messages[i - 1]
+                                                    const next = messages[i + 1]
+                                                    const sameAsPrev =
+                                                        prev &&
+                                                        prev.from_wallet?.toLowerCase() ===
+                                                            m.from_wallet?.toLowerCase()
+                                                    const sameAsNext =
+                                                        next &&
+                                                        next.from_wallet?.toLowerCase() ===
+                                                            m.from_wallet?.toLowerCase()
+
+                                                    return (
+                                                        <div
+                                                            key={i}
+                                                            className={`msg-bubble-wrap ${isMine ? "mine" : "theirs"} ${
+                                                                sameAsPrev ? "grouped-top" : ""
+                                                            } ${sameAsNext ? "grouped-bottom" : ""}`}
+                                                        >
+                                                            <div
+                                                                className={`msg-bubble ${isMine ? "msg-mine" : "msg-theirs"} ${m.failed ? "msg-failed" : ""}`}
+                                                            >
+                                                                {m.text}
+                                                                {m.pending && (
+                                                                    <span className="msg-pending-dot">
+                                                                        {" "}
+                                                                        ⏳
+                                                                    </span>
+                                                                )}
+                                                                {m.failed && (
+                                                                    <span className="msg-failed-text">
+                                                                        {" "}
+                                                                        ⚠ failed
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            {!sameAsNext && (
+                                                                <div className="msg-bubble-time">
+                                                                    {timeAgo(m.created_at)}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )
+                                                })}
+                                                <div ref={bottomRef} />
+                                            </div>
+                                            <div className="msg-chat-footer">
+                                                <input
+                                                    className="msg-input-text"
+                                                    placeholder="Type a message..."
+                                                    value={newMsg}
+                                                    onChange={(e) => setNewMsg(e.target.value)}
+                                                    onKeyDown={(e) =>
+                                                        e.key === "Enter" && handleSend()
+                                                    }
+                                                />
+                                                <div
+                                                    className={`msg-send-btn ${sending ? "sending" : ""}`}
+                                                    onClick={!sending ? handleSend : undefined}
+                                                    onMouseEnter={() => setSendHover(true)}
+                                                    onMouseLeave={() => setSendHover(false)}
+                                                    style={{
+                                                        opacity: sending ? 0.6 : 1,
+                                                        cursor: sending
+                                                            ? "not-allowed"
+                                                            : "pointer",
+                                                    }}
                                                 >
-                                                    {m.text}
+                                                    <div
+                                                        className="skew-fill-left"
+                                                        style={{
+                                                            transform: sendHover
+                                                                ? "translateX(-110%) skewX(-8deg)"
+                                                                : "skewX(-8deg)",
+                                                        }}
+                                                    />
+                                                    <div
+                                                        className="skew-fill-right"
+                                                        style={{
+                                                            transform: sendHover
+                                                                ? "translateX(110%) skewX(-8deg)"
+                                                                : "skewX(-8deg)",
+                                                        }}
+                                                    />
+                                                    <span
+                                                        style={{
+                                                            position: "relative",
+                                                            zIndex: 1,
+                                                            color: sendHover ? "#fff" : "#000",
+                                                            transition: "color 0.4s ease",
+                                                        }}
+                                                    >
+                                                        {sending ? "..." : "SEND →"}
+                                                    </span>
                                                 </div>
-                                            ))}
-                                            <div ref={bottomRef} />
-                                        </div>
-                                        <div className="msg-chat-footer">
-                                            <input
-                                                className="msg-input-text"
-                                                placeholder="Type a message..."
-                                                value={newMsg}
-                                                onChange={(e) => setNewMsg(e.target.value)}
-                                                onKeyDown={(e) =>
-                                                    e.key === "Enter" && handleSend()
-                                                }
-                                            />
-                                            <button
-                                                className="msg-send-btn"
-                                                onClick={handleSend}
-                                                disabled={sending}
-                                            >
-                                                {sending ? "..." : "SEND"}
-                                            </button>
-                                        </div>
-                                    </>
-                                )}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}

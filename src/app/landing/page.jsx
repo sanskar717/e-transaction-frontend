@@ -28,9 +28,6 @@ export default function LandingPage() {
     const [btnText, setBtnText] = useState("CONNECT WALLET")
     const [connecting, setConnecting] = useState(false)
     const [account, setAccount] = useState(null)
-    const addrLetters = account
-        ? `CONNECTED - WALLET: ${account.slice(0, 6)}...${account.slice(-4)}`.split("")
-        : []
     const [addrHovered, setAddrHovered] = useState(false)
     const [addrOffsets] = useState(() =>
         Array.from({ length: 40 }, (_, i) => ({
