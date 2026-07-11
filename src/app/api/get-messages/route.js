@@ -17,7 +17,7 @@ export async function GET(request) {
     const client = await pool.connect()
     try {
         const result = await client.query(
-            `SELECT id, from_wallet, to_wallet, encrypted_content, created_at 
+            `SELECT id, from_wallet, to_wallet, encrypted_content, encrypted_content_sender, created_at 
              FROM messages 
              WHERE (from_wallet = $1 AND to_wallet = $2) 
                 OR (from_wallet = $2 AND to_wallet = $1)

@@ -6,18 +6,18 @@ const pool = new Pool({
 })
 
 export async function POST(request) {
-    const { fromWallet, toWallet, encryptedContent } = await request.json()
+    const { fromWallet, toWallet, encryptedContent, encryptedContentSender } = await request.json()
 
-    if (!fromWallet || !toWallet || !encryptedContent) {
+    if (!fromWallet || !toWallet || !encryptedContent || !encryptedContentSender) {
         return Response.json({ error: "Missing fields" }, { status: 400 })
     }
 
     const client = await pool.connect()
     try {
         await client.query(
-            `INSERT INTO messages (from_wallet, to_wallet, encrypted_content) 
-             VALUES ($1, $2, $3)`,
-            [fromWallet.toLowerCase(), toWallet.toLowerCase(), encryptedContent]
+            `INSERT INTO messages (from_wallet, to_wallet, encrypted_content, encrypted_content_sender) 
+             VALUES ($1, $2, $3, $4)`,
+            [fromWallet.toLowerCase(), toWallet.toLowerCase(), encryptedContent, encryptedContentSender]
         )
         return Response.json({ success: true })
     } catch (err) {

@@ -19,6 +19,7 @@ export default function MessagesPage() {
     const [keyLoading, setKeyLoading] = useState(false)
     const [keyError, setKeyError] = useState(null)
 
+    const [conversations, setConversations] = useState([])
     const [otherWallet, setOtherWallet] = useState("")
     const [activeChat, setActiveChat] = useState(null)
     const [messages, setMessages] = useState([])
@@ -26,6 +27,8 @@ export default function MessagesPage() {
     const [sending, setSending] = useState(false)
     const [loadingMsgs, setLoadingMsgs] = useState(false)
     const bottomRef = useRef(null)
+    const chatBodyRef = useRef(null)
+    const pollRef = useRef(null)
 
     useEffect(() => {
         const check = async () => {
@@ -57,6 +60,12 @@ export default function MessagesPage() {
                 }
                 setAddress(addr)
                 setChecking(false)
+
+                const cached = localStorage.getItem(`msgKey_${addr.toLowerCase()}`)
+                if (cached) setKeypair(JSON.parse(cached))
+
+                const savedChat = sessionStorage.getItem("activeMsgChat")
+                if (savedChat) setActiveChat(savedChat)
             } catch (e) {
                 console.log(e)
                 router.push("/")
@@ -65,7 +74,6 @@ export default function MessagesPage() {
         check()
     }, [])
 
-    // Naya messaging keypair generate karke public key backend pe save karna
     const setupMessaging = async () => {
         if (!address) return
         setKeyLoading(true)
@@ -73,14 +81,12 @@ export default function MessagesPage() {
         try {
             const kp = await deriveMessagingKeypair(address)
             setKeypair(kp)
+            localStorage.setItem(`msgKey_${address.toLowerCase()}`, JSON.stringify(kp))
 
             await fetch("/api/save-public-key", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    walletAddress: address,
-                    publicKey: kp.publicKey,
-                }),
+                body: JSON.stringify({ walletAddress: address, publicKey: kp.publicKey }),
             })
         } catch (e) {
             console.log(e)
@@ -89,26 +95,41 @@ export default function MessagesPage() {
         setKeyLoading(false)
     }
 
-    const openChat = async (wallet) => {
+    const loadConversations = async () => {
+        if (!address) return
+        try {
+            const res = await fetch(`/api/get-conversations?address=${address}`)
+            const data = await res.json()
+            if (data.conversations) setConversations(data.conversations)
+        } catch (e) {
+            console.log(e)
+        }
+    }
+
+    const openChat = async (wallet, silent = false) => {
         const clean = wallet.trim().toLowerCase()
         if (!clean || !clean.startsWith("0x") || clean.length !== 42) {
-            alert("Enter a valid wallet address")
+            if (!silent) alert("Enter a valid wallet address")
             return
         }
         setActiveChat(clean)
-        setLoadingMsgs(true)
-        setMessages([])
+        sessionStorage.setItem("activeMsgChat", clean)
+        if (!silent) {
+            setLoadingMsgs(true)
+            setMessages([])
+        }
         try {
             const res = await fetch(`/api/get-messages?address=${address}&with=${clean}`)
             const data = await res.json()
             if (data.messages) {
                 const decrypted = await Promise.all(
                     data.messages.map(async (m) => {
+                        const isMine = m.from_wallet?.toLowerCase() === address.toLowerCase()
+                        const cipherToUse = isMine
+                            ? m.encrypted_content_sender
+                            : m.encrypted_content
                         try {
-                            const text = await decryptMessage(
-                                keypair.privateKey,
-                                m.encrypted_content,
-                            )
+                            const text = await decryptMessage(keypair.privateKey, cipherToUse)
                             return { ...m, text }
                         } catch {
                             return { ...m, text: "⚠ Could not decrypt" }
@@ -120,11 +141,32 @@ export default function MessagesPage() {
         } catch (e) {
             console.log(e)
         }
-        setLoadingMsgs(false)
+        if (!silent) setLoadingMsgs(false)
     }
 
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+        if (keypair) {
+            loadConversations()
+            if (activeChat) openChat(activeChat, true)
+        }
+    }, [keypair])
+
+    useEffect(() => {
+        if (!keypair) return
+        pollRef.current = setInterval(() => {
+            loadConversations()
+            if (activeChat) openChat(activeChat, true)
+        }, 4000)
+        return () => clearInterval(pollRef.current)
+    }, [keypair, activeChat])
+
+    const prevMsgCount = useRef(0)
+
+    useEffect(() => {
+        if (messages.length > prevMsgCount.current && chatBodyRef.current) {
+            chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight
+        }
+        prevMsgCount.current = messages.length
     }, [messages])
 
     const handleSend = async () => {
@@ -139,7 +181,8 @@ export default function MessagesPage() {
                 return
             }
 
-            const encrypted = await encryptMessage(keyData.publicKey, newMsg.trim())
+            const encryptedForReceiver = await encryptMessage(keyData.publicKey, newMsg.trim())
+            const encryptedForSender = await encryptMessage(keypair.publicKey, newMsg.trim())
 
             await fetch("/api/send-message", {
                 method: "POST",
@@ -147,7 +190,8 @@ export default function MessagesPage() {
                 body: JSON.stringify({
                     fromWallet: address,
                     toWallet: activeChat,
-                    encryptedContent: encrypted,
+                    encryptedContent: encryptedForReceiver,
+                    encryptedContentSender: encryptedForSender,
                 }),
             })
 
@@ -161,6 +205,7 @@ export default function MessagesPage() {
                 },
             ])
             setNewMsg("")
+            loadConversations()
         } catch (e) {
             console.log(e)
             alert("Failed to send message.")
@@ -188,7 +233,7 @@ export default function MessagesPage() {
                             <div className="msg-setup-title">ENABLE ENCRYPTED MESSAGING</div>
                             <div className="msg-setup-sub">
                                 Sign a free message with your wallet to generate your private
-                                messaging key. No gas required.
+                                messaging key. No gas required. You'll only need to do this once.
                             </div>
                             <button
                                 className="msg-setup-btn"
@@ -216,6 +261,30 @@ export default function MessagesPage() {
                                 >
                                     OPEN CHAT →
                                 </button>
+
+                                <div className="msg-inbox-title">INBOX</div>
+                                <div className="msg-inbox-list">
+                                    {conversations.length === 0 && (
+                                        <div className="msg-inbox-empty">No conversations yet</div>
+                                    )}
+                                    {conversations.map((c) => (
+                                        <div
+                                            key={c.other_wallet}
+                                            className={`msg-inbox-item ${
+                                                activeChat === c.other_wallet ? "active" : ""
+                                            }`}
+                                            onClick={() => openChat(c.other_wallet)}
+                                        >
+                                            <div className="msg-inbox-avatar">
+                                                {c.other_wallet.slice(2, 4).toUpperCase()}
+                                            </div>
+                                            <div className="msg-inbox-addr">
+                                                {c.other_wallet.slice(0, 6)}...
+                                                {c.other_wallet.slice(-4)}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
 
                             <div className="msg-chat">
@@ -226,7 +295,12 @@ export default function MessagesPage() {
                                 ) : (
                                     <>
                                         <div className="msg-chat-header">
-                                            {activeChat.slice(0, 6)}...{activeChat.slice(-4)}
+                                            <div className="msg-chat-avatar">
+                                                {activeChat.slice(2, 4).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                {activeChat.slice(0, 6)}...{activeChat.slice(-4)}
+                                            </div>
                                         </div>
                                         <div className="msg-chat-body">
                                             {loadingMsgs && (
@@ -267,7 +341,7 @@ export default function MessagesPage() {
                                                 onClick={handleSend}
                                                 disabled={sending}
                                             >
-                                                {sending ? "..." : "SEND →"}
+                                                {sending ? "..." : "SEND"}
                                             </button>
                                         </div>
                                     </>
