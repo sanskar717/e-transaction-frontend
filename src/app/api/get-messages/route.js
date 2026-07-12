@@ -16,13 +16,20 @@ export async function GET(request) {
 
     const client = await pool.connect()
     try {
+        const hideResult = await client.query(
+            `SELECT hidden_before FROM conversation_hides WHERE wallet_address = $1 AND other_wallet = $2`,
+            [myWallet.toLowerCase(), otherWallet.toLowerCase()]
+        )
+        const hiddenBefore = hideResult.rows[0]?.hidden_before || "1970-01-01T00:00:00Z"
+
         const result = await client.query(
             `SELECT id, from_wallet, to_wallet, encrypted_content, encrypted_content_sender, created_at 
              FROM messages 
              WHERE (from_wallet = $1 AND to_wallet = $2) 
                 OR (from_wallet = $2 AND to_wallet = $1)
+             AND created_at > $3
              ORDER BY created_at ASC`,
-            [myWallet.toLowerCase(), otherWallet.toLowerCase()]
+            [myWallet.toLowerCase(), otherWallet.toLowerCase(), hiddenBefore]
         )
         return Response.json({ messages: result.rows })
     } catch (err) {

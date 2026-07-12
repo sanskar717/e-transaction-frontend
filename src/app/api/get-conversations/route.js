@@ -26,15 +26,20 @@ export async function GET(request) {
                     u.username
                 FROM (
                     SELECT 
-                        CASE WHEN from_wallet = $1 THEN to_wallet ELSE from_wallet END AS other_wallet,
-                        created_at AS last_message_at,
-                        from_wallet AS last_from_wallet,
-                        encrypted_content AS last_content,
-                        encrypted_content_sender AS last_content_sender
-                    FROM messages
-                    WHERE from_wallet = $1 OR to_wallet = $1
+                        m.from_wallet AS msg_from,
+                        m.to_wallet AS msg_to,
+                        CASE WHEN m.from_wallet = $1 THEN m.to_wallet ELSE m.from_wallet END AS other_wallet,
+                        m.created_at AS last_message_at,
+                        m.from_wallet AS last_from_wallet,
+                        m.encrypted_content AS last_content,
+                        m.encrypted_content_sender AS last_content_sender
+                    FROM messages m
+                    WHERE m.from_wallet = $1 OR m.to_wallet = $1
                 ) sub
+                LEFT JOIN conversation_hides h 
+                    ON h.wallet_address = $1 AND h.other_wallet = sub.other_wallet
                 LEFT JOIN users u ON u.wallet_address = sub.other_wallet
+                WHERE sub.last_message_at > COALESCE(h.hidden_before, '1970-01-01T00:00:00Z')
                 ORDER BY other_wallet, last_message_at DESC
             ) latest
             ORDER BY last_message_at DESC`,

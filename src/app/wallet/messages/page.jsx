@@ -1,6 +1,6 @@
 "use client"
 import { useRouter } from "next/navigation"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, Fragment } from "react"
 import ShootingStars from "../../../components/ShootingStars"
 import Navbar from "../walletNavbar"
 import { checkIfRegistered, checkHasPinSet } from "../../../config/contracts"
@@ -22,6 +22,21 @@ function timeAgo(timestamp) {
     return new Date(ts).toLocaleDateString()
 }
 
+function formatMessageTime(timestamp) {
+    const d = new Date(timestamp)
+    const h = String(d.getHours()).padStart(2, "0")
+    const m = String(d.getMinutes()).padStart(2, "0")
+    return `${h}:${m}`
+}
+
+function formatDateLabel(timestamp) {
+    const d = new Date(timestamp)
+    const day = String(d.getDate()).padStart(2, "0")
+    const month = d.toLocaleDateString("en-GB", { month: "short" })
+    const year = d.getFullYear()
+    return `${day}-${month}-${year}`
+}
+
 export default function MessagesPage() {
     const router = useRouter()
     const [checking, setChecking] = useState(true)
@@ -40,6 +55,7 @@ export default function MessagesPage() {
     const [sendHover, setSendHover] = useState(false)
     const [loadingMsgs, setLoadingMsgs] = useState(false)
     const [fullscreen, setFullscreen] = useState(false)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const bottomRef = useRef(null)
     const chatBodyRef = useRef(null)
     const pollRef = useRef(null)
@@ -166,6 +182,29 @@ export default function MessagesPage() {
         }
     }
 
+    const handleDeleteConversation = () => {
+        if (!activeChat) return
+        setShowDeleteConfirm(true)
+    }
+
+    const confirmDeleteConversation = async () => {
+        setShowDeleteConfirm(false)
+        try {
+            await fetch("/api/delete-conversation", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ address, otherWallet: activeChat }),
+            })
+            setMessages([])
+            setConversations((prev) => prev.filter((c) => c.other_wallet !== activeChat))
+            setActiveChat(null)
+            sessionStorage.removeItem(`activeMsgChat_${address.toLowerCase()}`)
+        } catch (e) {
+            console.log(e)
+            alert("Failed to delete conversation.")
+        }
+    }
+
     const openChat = async (wallet, silent = false) => {
         const clean = wallet.trim().toLowerCase()
         if (!clean || !clean.startsWith("0x") || clean.length !== 42) {
@@ -184,7 +223,6 @@ export default function MessagesPage() {
             setMessages([])
         }
 
-        // Username fetch karo header ke liye
         try {
             const existing = conversations.find((c) => c.other_wallet === clean)
             if (existing?.username) {
@@ -337,6 +375,33 @@ export default function MessagesPage() {
             <Navbar activeTab="messages" />
             <div className="msg-page">
                 <div className="msg-inner">
+                    {showDeleteConfirm && (
+                        <div
+                            className="msg-confirm-overlay"
+                            onClick={() => setShowDeleteConfirm(false)}
+                        >
+                            <div className="msg-confirm-box" onClick={(e) => e.stopPropagation()}>
+                                <div className="msg-confirm-title">Delete conversation?</div>
+                                <div className="msg-confirm-sub">
+                                    It will only be removed from your view.
+                                </div>
+                                <div className="msg-confirm-actions">
+                                    <button
+                                        className="msg-confirm-cancel"
+                                        onClick={() => setShowDeleteConfirm(false)}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        className="msg-confirm-delete"
+                                        onClick={confirmDeleteConversation}
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     {!keypair ? (
                         <div className="msg-setup">
                             <div className="msg-setup-title">ENABLE ENCRYPTED MESSAGING</div>
@@ -478,6 +543,12 @@ export default function MessagesPage() {
                                                             </div>
                                                         )}
                                                 </div>
+                                                <button
+                                                    className="msg-delete-btn"
+                                                    onClick={handleDeleteConversation}
+                                                >
+                                                    Delete
+                                                </button>
                                             </div>
                                             <div className="msg-chat-body" ref={chatBodyRef}>
                                                 {loadingMsgs && (
@@ -502,37 +573,55 @@ export default function MessagesPage() {
                                                         next &&
                                                         next.from_wallet?.toLowerCase() ===
                                                             m.from_wallet?.toLowerCase()
+                                                    const showDateSeparator =
+                                                        !prev ||
+                                                        new Date(m.created_at).toDateString() !==
+                                                            new Date(
+                                                                prev.created_at,
+                                                            ).toDateString()
 
                                                     return (
-                                                        <div
-                                                            key={i}
-                                                            className={`msg-bubble-wrap ${isMine ? "mine" : "theirs"} ${
-                                                                sameAsPrev ? "grouped-top" : ""
-                                                            } ${sameAsNext ? "grouped-bottom" : ""}`}
-                                                        >
-                                                            <div
-                                                                className={`msg-bubble ${isMine ? "msg-mine" : "msg-theirs"} ${m.failed ? "msg-failed" : ""}`}
-                                                            >
-                                                                {m.text}
-                                                                {m.pending && (
-                                                                    <span className="msg-pending-dot">
-                                                                        {" "}
-                                                                        •••
+                                                        <Fragment key={i}>
+                                                            {showDateSeparator && (
+                                                                <div className="msg-date-separator">
+                                                                    <span>
+                                                                        {formatDateLabel(
+                                                                            m.created_at,
+                                                                        )}
                                                                     </span>
-                                                                )}
-                                                                {m.failed && (
-                                                                    <span className="msg-failed-text">
-                                                                        {" "}
-                                                                        ⚠ failed
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            {!sameAsNext && (
-                                                                <div className="msg-bubble-time">
-                                                                    {timeAgo(m.created_at)}
                                                                 </div>
                                                             )}
-                                                        </div>
+                                                            <div
+                                                                className={`msg-bubble-wrap ${isMine ? "mine" : "theirs"} ${
+                                                                    sameAsPrev ? "grouped-top" : ""
+                                                                } ${sameAsNext ? "grouped-bottom" : ""}`}
+                                                            >
+                                                                <div
+                                                                    className={`msg-bubble ${isMine ? "msg-mine" : "msg-theirs"} ${m.failed ? "msg-failed" : ""}`}
+                                                                >
+                                                                    {m.text}
+                                                                    {m.pending && (
+                                                                        <span className="msg-pending-dot">
+                                                                            {" "}
+                                                                            •••
+                                                                        </span>
+                                                                    )}
+                                                                    {m.failed && (
+                                                                        <span className="msg-failed-text">
+                                                                            {" "}
+                                                                            ⚠ failed
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                {!sameAsNext && (
+                                                                    <div className="msg-bubble-time">
+                                                                        {formatMessageTime(
+                                                                            m.created_at,
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </Fragment>
                                                     )
                                                 })}
                                                 <div ref={bottomRef} />

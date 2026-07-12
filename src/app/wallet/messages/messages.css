@@ -21,7 +21,6 @@
     display: flex;
     flex-direction: column;
 }
-/* ===== Fullscreen expand mode: message section takes over the whole viewport ===== */
 .msg-fullscreen {
     position: fixed;
     inset: 0;
@@ -57,7 +56,6 @@
         transform: scale(1);
     }
 }
-/* ===== Page header (no underline) ===== */
 .msg-page-header {
     margin-bottom: 22px;
     padding-bottom: 18px;
@@ -99,8 +97,6 @@
     letter-spacing: 1px;
     color: rgba(255, 255, 255, 0.4);
 }
-
-/* ===== Setup screen ===== */
 .msg-setup {
     text-align: center;
     padding: 80px 20px;
@@ -141,8 +137,6 @@
     color: #ef4444;
     font-size: 12px;
 }
-
-/* ===== Main layout ===== */
 .msg-layout {
     display: grid;
     grid-template-columns: 300px 1fr;
@@ -150,8 +144,6 @@
     height: 78vh;
     min-height: 620px;
 }
-
-/* ===== Sidebar — transparent glass panel ===== */
 .msg-sidebar {
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
@@ -196,8 +188,6 @@
 .msg-input-wallet:focus {
     border-color: rgba(255, 255, 255, 0.45);
 }
-
-/* ===== Open Chat button — same skew-fill hover as Send ===== */
 .msg-open-btn {
     position: relative;
     overflow: hidden;
@@ -220,8 +210,6 @@
 .msg-open-btn:hover .msg-open-btn-text {
     color: #fff;
 }
-
-/* shared skew-fill panels, used by both Open Chat and Send */
 .skew-fill-left,
 .skew-fill-right {
     position: absolute;
@@ -247,7 +235,6 @@
 .msg-open-btn:hover .skew-fill-right {
     transform: translateX(110%) skewX(-8deg);
 }
-
 .msg-inbox-title {
     font-size: 12px;
     letter-spacing: 3px;
@@ -351,8 +338,6 @@
     text-overflow: ellipsis;
     min-width: 0;
 }
-
-/* ===== Chat panel — transparent glass ===== */
 .msg-chat {
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
@@ -404,8 +389,6 @@
     color: rgba(255, 255, 255, 0.3);
     font-size: 12px;
 }
-
-/* ===== Bubbles — softer color pairing, readable font, directional entrance ===== */
 .msg-bubble {
     max-width: 72%;
     padding: 11px 16px;
@@ -459,8 +442,6 @@
     border-bottom-left-radius: 3px;
     animation: msgInTheirs 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-/* ===== Footer / input — transparent ===== */
 .msg-chat-footer {
     display: flex;
     gap: 10px;
@@ -516,8 +497,6 @@
         opacity: 1;
     }
 }
-
-/* ===== Scrollbars ===== */
 .msg-chat-body::-webkit-scrollbar,
 .msg-inbox-list::-webkit-scrollbar {
     width: 6px;
@@ -541,8 +520,6 @@
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
-
-/* ===== Inbox: username + preview + time (Telegram style) ===== */
 .msg-inbox-info {
     flex: 1;
     min-width: 0;
@@ -579,8 +556,6 @@
     padding-right: 6px;
     max-width: 90%;
 }
-
-/* ===== Chat header: username + address sub-line ===== */
 .msg-chat-header-info {
     display: flex;
     flex-direction: column;
@@ -598,8 +573,6 @@
     cursor: pointer;
     user-select: all;
 }
-
-/* ===== Message bubble + timestamp wrapper ===== */
 .msg-bubble-wrap {
     display: flex;
     flex-direction: column;
@@ -616,8 +589,6 @@
     color: rgba(255, 255, 255, 0.3);
     padding: 0 4px;
 }
-
-/* ===== Telegram-style message grouping ===== */
 .msg-bubble-wrap {
     margin-bottom: 10px;
 }
@@ -627,7 +598,6 @@
 .msg-bubble-wrap.grouped-bottom {
     margin-top: -8px;
 }
-
 .msg-bubble-wrap.mine.grouped-top .msg-bubble {
     border-bottom-right-radius: 12px;
 }
@@ -638,7 +608,6 @@
     border-top-right-radius: 12px;
     border-bottom-right-radius: 12px;
 }
-
 .msg-bubble-wrap.theirs.grouped-top .msg-bubble {
     border-bottom-left-radius: 12px;
 }
@@ -649,7 +618,6 @@
     border-top-left-radius: 12px;
     border-bottom-left-radius: 12px;
 }
-
 .msg-inbox-right {
     display: flex;
     align-items: center;
@@ -685,8 +653,6 @@
     opacity: 0.5;
     font-size: 10px;
 }
-
-/* ===== Unread conversation: brighter text until opened ===== */
 .msg-inbox-item.unread .msg-inbox-name {
     color: #ff7a3d;
 }
@@ -702,7 +668,133 @@
     background: rgba(255, 255, 255, 0.03);
 }
 
-/* ===== Responsive ===== */
+/* ===== Delete conversation button — moved to left, red on hover ===== */
+.msg-delete-btn {
+    margin-left: auto;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+.msg-delete-btn:hover {
+    background: transparent;
+    border-color: #facc15;
+    border-width: 2px;
+    color: #facc15;
+}
+
+/* ===== Custom delete-confirmation modal (left side, replaces native confirm) ===== */
+.msg-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+}
+.msg-confirm-box {
+    margin-right: 40px;
+    margin-top: 140px;
+    width: 320px;
+    background: #0a0a0a;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 22px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    animation: msgConfirmIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes msgConfirmIn {
+    from {
+        opacity: 0;
+        transform: translateX(30px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+.msg-confirm-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+}
+.msg-confirm-sub {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+.msg-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+.msg-confirm-cancel {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.msg-confirm-cancel:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+.msg-confirm-delete {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid #ef4444;
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.msg-confirm-delete:hover {
+    background: #000;
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.msg-date-separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin: 18px 0 10px;
+}
+.msg-date-separator::before,
+.msg-date-separator::after {
+    content: "";
+    flex: 1;
+    height: 2px;
+}
+.msg-date-separator::before {
+    background: linear-gradient(90deg, transparent 0%, #facc15 10%, #facc15 100%);
+    clip-path: polygon(0% 50%, 100% 0%, 100% 100%);
+}
+.msg-date-separator::after {
+    background: linear-gradient(90deg, #facc15 0%, #facc15 90%, transparent 100%);
+    clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
+}
+.msg-date-separator span {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: #facc15;
+    white-space: nowrap;
+}
+
 @media (max-width: 860px) {
     .msg-page {
         padding-top: 110px;
