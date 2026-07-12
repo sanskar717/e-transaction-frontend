@@ -155,7 +155,7 @@
 .msg-sidebar {
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
-    padding: 20px;
+    padding: 20px 0;
     background: rgba(255, 255, 255, 0.02);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
@@ -163,6 +163,13 @@
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
+}
+.msg-sidebar-title,
+.msg-input-wallet,
+.msg-open-btn,
+.msg-inbox-title {
+    margin-left: 20px;
+    margin-right: 20px;
 }
 .msg-sidebar-title {
     font-size: 10px;
@@ -172,7 +179,6 @@
     flex-shrink: 0;
 }
 .msg-input-wallet {
-    width: 100%;
     padding: 12px 14px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.15);
@@ -195,9 +201,8 @@
 .msg-open-btn {
     position: relative;
     overflow: hidden;
-    width: 100%;
     padding: 12px;
-    border-radius: 6px;
+    border-radius: 8px;
     border: 2px solid #fff;
     background: transparent;
     font-size: 11px;
@@ -267,10 +272,9 @@
 }
 .msg-inbox-item {
     display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 10px 10px;
-    border-radius: 8px;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 7px;
     cursor: pointer;
     transition:
         background 0.15s,
@@ -284,36 +288,55 @@
 .msg-inbox-item:not(:last-child)::after {
     content: "";
     position: absolute;
-    left: 10px;
-    right: 10px;
-    bottom: -2px;
+    left: 0;
+    right: 0;
+    bottom: 0;
     height: 1px;
     background: rgba(255, 255, 255, 0.12);
 }
 .msg-inbox-avatar {
     transition: box-shadow 0.3s ease;
 }
-.msg-inbox-item.active {
-    background: rgba(255, 255, 255, 0.08);
-    border-left: 3px solid #fff;
+.msg-inbox-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-left: 3px solid rgba(255, 255, 255, 0.5);
 }
-.msg-inbox-item.active .msg-inbox-addr {
-    color: #fff;
-    font-weight: 700;
+.msg-inbox-item:hover .msg-inbox-time {
+    color: #ffffff;
+}
+.msg-inbox-item:hover .msg-inbox-preview {
+    color: #ffffff;
 }
 .msg-inbox-avatar {
-    width: 30px;
-    height: 30px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.06);
     border: 1.6px solid #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: 13px;
     color: #fff;
     font-weight: 700;
     flex-shrink: 0;
+    line-height: 1;
+    text-align: center;
+    padding: 0;
+}
+.msg-inbox-item.active {
+    background: rgba(255, 255, 255, 0.06);
+    border-left: 3px solid rgba(255, 255, 255, 0.5);
+}
+.msg-inbox-item.active .msg-inbox-time {
+    color: #fff;
+}
+.msg-inbox-item.active .msg-inbox-preview {
+    color: #fff;
+}
+.msg-inbox-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-left: 3px solid rgba(255, 255, 255, 0.3);
 }
 .msg-inbox-item.active .msg-inbox-avatar {
     background: #000;
@@ -371,7 +394,7 @@
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 24px;
+    padding: 20px 14px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -384,7 +407,7 @@
 
 /* ===== Bubbles — softer color pairing, readable font, directional entrance ===== */
 .msg-bubble {
-    max-width: 58%;
+    max-width: 72%;
     padding: 11px 16px;
     border-radius: 12px;
     font-size: 13.5px;
@@ -534,7 +557,7 @@
     gap: 8px;
 }
 .msg-inbox-name {
-    font-size: 12.5px;
+    font-size: 14px;
     font-weight: 700;
     color: #ff7a3d;
     white-space: nowrap;
@@ -553,6 +576,8 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    padding-right: 6px;
+    max-width: 90%;
 }
 
 /* ===== Chat header: username + address sub-line ===== */
@@ -630,11 +655,24 @@
     align-items: center;
     gap: 6px;
     flex-shrink: 0;
+    position: relative;
 }
 .msg-unread-badge {
-    color: #ff7a3d;
-    font-size: 14px;
-    line-height: 1;
+    position: absolute;
+    top: 14px;
+    right: -2px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: #ff7a3d;
+    color: #000;
+    font-size: 9px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 .msg-failed {
     border-color: rgba(239, 68, 68, 0.5) !important;
@@ -648,13 +686,53 @@
     font-size: 10px;
 }
 
+/* ===== Unread conversation: brighter text until opened ===== */
+.msg-inbox-item.unread .msg-inbox-name {
+    color: #ff7a3d;
+}
+.msg-inbox-item.unread .msg-inbox-preview {
+    color: #ffffff;
+    font-weight: 600;
+}
+.msg-inbox-item.unread .msg-inbox-time {
+    color: #ffffff;
+    font-weight: 700;
+}
+.msg-inbox-item.unread {
+    background: rgba(255, 255, 255, 0.03);
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 860px) {
+    .msg-page {
+        padding-top: 110px;
+    }
+    .msg-inner {
+        padding: 0 12px;
+        max-width: 100%;
+    }
+    .msg-page-title {
+        font-size: 22px;
+        letter-spacing: 2px;
+    }
     .msg-layout {
         grid-template-columns: 1fr;
         grid-template-rows: auto 1fr;
+        height: auto;
+        min-height: 0;
+        gap: 14px;
     }
-    .msg-inner {
-        padding: 0 20px;
+    .msg-sidebar {
+        max-height: 260px;
+    }
+    .msg-chat {
+        height: 60vh;
+        min-height: 400px;
+    }
+    .msg-bubble {
+        max-width: 82%;
+    }
+    .msg-chat-body {
+        padding: 16px 10px;
     }
 }

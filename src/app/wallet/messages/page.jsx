@@ -136,7 +136,30 @@ export default function MessagesPage() {
                         return { ...c, preview, isUnread }
                     }),
                 )
-                setConversations(withPreview)
+
+                const seenMap = {}
+                withPreview.forEach((c) => {
+                    const lastSeenKey = `msgSeen_${address.toLowerCase()}_${c.other_wallet}`
+                    seenMap[c.other_wallet] =
+                        localStorage.getItem(lastSeenKey) || "1970-01-01T00:00:00Z"
+                })
+
+                let counts = {}
+                try {
+                    const countRes = await fetch("/api/get-unread-counts", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ address, seenMap }),
+                    })
+                    const countData = await countRes.json()
+                    counts = countData.counts || {}
+                } catch (e) {
+                    console.log(e)
+                }
+
+                setConversations(
+                    withPreview.map((c) => ({ ...c, unreadCount: counts[c.other_wallet] || 0 })),
+                )
             }
         } catch (e) {
             console.log(e)
@@ -152,6 +175,10 @@ export default function MessagesPage() {
         setActiveChat(clean)
         sessionStorage.setItem(`activeMsgChat_${address.toLowerCase()}`, clean)
         localStorage.setItem(`msgSeen_${address.toLowerCase()}_${clean}`, new Date().toISOString())
+
+        setConversations((prev) =>
+            prev.map((c) => (c.other_wallet === clean ? { ...c, unreadCount: 0 } : c)),
+        )
         if (!silent) {
             setLoadingMsgs(true)
             setMessages([])
@@ -271,6 +298,20 @@ export default function MessagesPage() {
             setMessages((prev) =>
                 prev.map((m) => (m.id === tempId ? { ...m, pending: false } : m)),
             )
+
+            setConversations((prev) => {
+                const idx = prev.findIndex((c) => c.other_wallet === activeChat)
+                if (idx === -1) return prev
+                const updated = [...prev]
+                const [item] = updated.splice(idx, 1)
+                updated.unshift({
+                    ...item,
+                    preview: `You: ${textToSend}`,
+                    last_message_at: new Date().toISOString(),
+                })
+                return updated
+            })
+
             loadConversations()
         } catch (e) {
             console.log(e)
@@ -365,7 +406,7 @@ export default function MessagesPage() {
                                                 key={c.other_wallet}
                                                 className={`msg-inbox-item ${
                                                     activeChat === c.other_wallet ? "active" : ""
-                                                }`}
+                                                } ${c.unreadCount > 0 ? "unread" : ""}`}
                                                 onClick={() => openChat(c.other_wallet)}
                                             >
                                                 <div className="msg-inbox-avatar">
@@ -374,16 +415,21 @@ export default function MessagesPage() {
                                                 <div className="msg-inbox-info">
                                                     <div className="msg-inbox-top-row">
                                                         <div className="msg-inbox-name">
-                                                            {c.username ||
-                                                                `${c.other_wallet.slice(0, 6)}...${c.other_wallet.slice(-4)}`}
+                                                            {c.other_wallet ===
+                                                            address?.toLowerCase()
+                                                                ? "Saved Messages"
+                                                                : c.username ||
+                                                                  `${c.other_wallet.slice(0, 6)}...${c.other_wallet.slice(-4)}`}
                                                         </div>
                                                         <div className="msg-inbox-right">
                                                             <div className="msg-inbox-time">
                                                                 {timeAgo(c.last_message_at)}
                                                             </div>
-                                                            {c.isUnread && (
+                                                            {c.unreadCount > 0 && (
                                                                 <div className="msg-unread-badge">
-                                                                    ●
+                                                                    {c.unreadCount > 9
+                                                                        ? "9+"
+                                                                        : c.unreadCount}
                                                                 </div>
                                                             )}
                                                         </div>
@@ -406,26 +452,31 @@ export default function MessagesPage() {
                                         <>
                                             <div className="msg-chat-header">
                                                 <div className="msg-chat-avatar">
-                                                    {activeChat.slice(2, 4).toUpperCase()}
+                                                    {activeChat === address?.toLowerCase()
+                                                        ? "SM"
+                                                        : activeChat.slice(2, 4).toUpperCase()}
                                                 </div>
                                                 <div className="msg-chat-header-info">
                                                     <div className="msg-chat-header-name">
-                                                        {activeChatUsername ||
-                                                            `${activeChat.slice(0, 6)}...${activeChat.slice(-4)}`}
+                                                        {activeChat === address?.toLowerCase()
+                                                            ? "Saved Messages"
+                                                            : activeChatUsername ||
+                                                              `${activeChat.slice(0, 6)}...${activeChat.slice(-4)}`}
                                                     </div>
-                                                    {activeChatUsername && (
-                                                        <div
-                                                            className="msg-chat-header-addr"
-                                                            title="Click to copy"
-                                                            onClick={() => {
-                                                                navigator.clipboard.writeText(
-                                                                    activeChat,
-                                                                )
-                                                            }}
-                                                        >
-                                                            {activeChat}
-                                                        </div>
-                                                    )}
+                                                    {activeChat !== address?.toLowerCase() &&
+                                                        activeChatUsername && (
+                                                            <div
+                                                                className="msg-chat-header-addr"
+                                                                title="Click to copy"
+                                                                onClick={() => {
+                                                                    navigator.clipboard.writeText(
+                                                                        activeChat,
+                                                                    )
+                                                                }}
+                                                            >
+                                                                {activeChat}
+                                                            </div>
+                                                        )}
                                                 </div>
                                             </div>
                                             <div className="msg-chat-body" ref={chatBodyRef}>
@@ -466,7 +517,7 @@ export default function MessagesPage() {
                                                                 {m.pending && (
                                                                     <span className="msg-pending-dot">
                                                                         {" "}
-                                                                        ⏳
+                                                                        •••
                                                                     </span>
                                                                 )}
                                                                 {m.failed && (
