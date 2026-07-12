@@ -1,6 +1,7 @@
 "use client"
 import { useRouter } from "next/navigation"
 import { useState, useEffect, useRef, Fragment } from "react"
+import { createPortal } from "react-dom"
 import ShootingStars from "../../../components/ShootingStars"
 import Navbar from "../walletNavbar"
 import { checkIfRegistered, checkHasPinSet } from "../../../config/contracts"
@@ -56,6 +57,8 @@ export default function MessagesPage() {
     const [loadingMsgs, setLoadingMsgs] = useState(false)
     const [fullscreen, setFullscreen] = useState(false)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [showDisableConfirm, setShowDisableConfirm] = useState(false)
+    const [alertMsg, setAlertMsg] = useState(null)
     const bottomRef = useRef(null)
     const chatBodyRef = useRef(null)
     const pollRef = useRef(null)
@@ -104,6 +107,32 @@ export default function MessagesPage() {
         check()
     }, [])
 
+    useEffect(() => {
+        if (!address) return
+        const handleStorage = (e) => {
+            const key = `msgKey_${address.toLowerCase()}`
+            if (e.key !== key) return
+            if (!e.newValue) {
+                setKeypair(null)
+                setConversations([])
+                setMessages([])
+                setActiveChat(null)
+                setActiveChatUsername(null)
+                setFullscreen(false)
+                setShowDisableConfirm(false)
+                setShowDeleteConfirm(false)
+            } else {
+                try {
+                    setKeypair(JSON.parse(e.newValue))
+                } catch (err) {
+                    console.log(err)
+                }
+            }
+        }
+        window.addEventListener("storage", handleStorage)
+        return () => window.removeEventListener("storage", handleStorage)
+    }, [address])
+
     const setupMessaging = async () => {
         if (!address) return
         setKeyLoading(true)
@@ -123,6 +152,32 @@ export default function MessagesPage() {
             setKeyError("Signature declined or failed. Try again.")
         }
         setKeyLoading(false)
+    }
+
+    const disableMessaging = () => {
+        if (!address) return
+        setShowDisableConfirm(true)
+    }
+
+    const confirmDisableMessaging = async () => {
+        setShowDisableConfirm(false)
+        try {
+            await fetch("/api/disable-messaging", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ walletAddress: address }),
+            })
+        } catch (e) {
+            console.log(e)
+        }
+        localStorage.removeItem(`msgKey_${address.toLowerCase()}`)
+        sessionStorage.removeItem(`activeMsgChat_${address.toLowerCase()}`)
+        setKeypair(null)
+        setConversations([])
+        setMessages([])
+        setActiveChat(null)
+        setActiveChatUsername(null)
+        setFullscreen(false)
     }
 
     const loadConversations = async () => {
@@ -278,6 +333,17 @@ export default function MessagesPage() {
         return () => clearInterval(pollRef.current)
     }, [keypair, activeChat])
 
+    useEffect(() => {
+        if (showDeleteConfirm || showDisableConfirm) {
+            document.body.style.overflow = "hidden"
+        } else {
+            document.body.style.overflow = ""
+        }
+        return () => {
+            document.body.style.overflow = ""
+        }
+    }, [showDeleteConfirm, showDisableConfirm])
+
     const prevMsgCount = useRef(0)
 
     useEffect(() => {
@@ -312,7 +378,7 @@ export default function MessagesPage() {
             const keyData = await keyRes.json()
             if (!keyData.publicKey) {
                 setMessages((prev) => prev.filter((m) => m.id !== tempId))
-                alert("This wallet hasn't set up messaging yet.")
+                setAlertMsg("This wallet hasn't set up messaging yet.")
                 setSending(false)
                 return
             }
@@ -402,6 +468,51 @@ export default function MessagesPage() {
                             </div>
                         </div>
                     )}
+                    {alertMsg &&
+                        createPortal(
+                            <div className="msg-alert-toast">
+                                <div className="msg-alert-text">{alertMsg}</div>
+                                <button className="msg-alert-ok" onClick={() => setAlertMsg(null)}>
+                                    OK
+                                </button>
+                            </div>,
+                            document.body,
+                        )}
+                    {showDisableConfirm &&
+                        createPortal(
+                            <div
+                                className="msg-disable-overlay"
+                                onClick={() => setShowDisableConfirm(false)}
+                            >
+                                <div
+                                    className="msg-disable-toast"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <div className="msg-disable-title">
+                                        ⏻ Disable encrypted messaging?
+                                    </div>
+                                    <div className="msg-disable-sub">
+                                        This removes your messaging key from this device. You can
+                                        re-enable it anytime by signing again.
+                                    </div>
+                                    <div className="msg-disable-actions">
+                                        <button
+                                            className="msg-disable-cancel"
+                                            onClick={() => setShowDisableConfirm(false)}
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            className="msg-disable-confirm"
+                                            onClick={confirmDisableMessaging}
+                                        >
+                                            Disable
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>,
+                            document.body,
+                        )}
                     {!keypair ? (
                         <div className="msg-setup">
                             <div className="msg-setup-title">ENABLE ENCRYPTED MESSAGING</div>
@@ -430,12 +541,20 @@ export default function MessagesPage() {
                                             {conversations.length === 1 ? "" : "s"}
                                         </div>
                                     </div>
-                                    <button
-                                        className="msg-fullscreen-btn"
-                                        onClick={() => setFullscreen((f) => !f)}
-                                    >
-                                        {fullscreen ? "⤡ CLOSE" : "⤢ EXPAND"}
-                                    </button>
+                                    <div className="msg-header-btn-group">
+                                        <button
+                                            className="msg-fullscreen-btn"
+                                            onClick={disableMessaging}
+                                        >
+                                            ⏻ DISABLE MESSAGING
+                                        </button>
+                                        <button
+                                            className="msg-fullscreen-btn"
+                                            onClick={() => setFullscreen((f) => !f)}
+                                        >
+                                            {fullscreen ? "⤡ CLOSE" : "⤢ EXPAND"}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div className="msg-layout">
@@ -543,12 +662,22 @@ export default function MessagesPage() {
                                                             </div>
                                                         )}
                                                 </div>
-                                                <button
-                                                    className="msg-delete-btn"
-                                                    onClick={handleDeleteConversation}
-                                                >
-                                                    Delete
-                                                </button>
+                                                <div className="msg-chat-header-actions">
+                                                    {fullscreen && (
+                                                        <button
+                                                            className="msg-normal-btn"
+                                                            onClick={() => setFullscreen(false)}
+                                                        >
+                                                            ⤡ NORMAL
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        className="msg-delete-btn"
+                                                        onClick={handleDeleteConversation}
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
                                             </div>
                                             <div className="msg-chat-body" ref={chatBodyRef}>
                                                 {loadingMsgs && (

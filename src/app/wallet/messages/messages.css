@@ -670,7 +670,7 @@
 
 /* ===== Delete conversation button — moved to left, red on hover ===== */
 .msg-delete-btn {
-    margin-left: auto;
+    /* margin-left: auto; */
     padding: 8px 14px;
     border-radius: 6px;
     border: 2px solid rgba(255, 255, 255, 0.25);
@@ -682,6 +682,38 @@
     flex-shrink: 0;
     transition: all 0.2s ease;
 }
+
+.msg-chat-header-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+.msg-normal-btn {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+.msg-normal-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.6);
+    color: #fff;
+}
+
+.msg-header-btn-group {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
 .msg-delete-btn:hover {
     background: transparent;
     border-color: #facc15;
@@ -765,6 +797,132 @@
     background: #000;
     border-color: #ef4444;
     color: #ef4444;
+}
+.msg-disable-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+}
+.msg-disable-toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 380px;
+    max-width: 90vw;
+    background: #0a0a0a;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 18px 22px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    animation: msgToastIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 100001;
+}
+@keyframes msgToastIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -30px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+.msg-disable-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.msg-disable-sub {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.5;
+    margin-bottom: 18px;
+}
+.msg-disable-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+.msg-disable-cancel {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.msg-disable-cancel:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+.msg-disable-confirm {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid #ef4444;
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.msg-disable-confirm:hover {
+    background: #000;
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.msg-alert-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100002;
+    background: #0a0a0a;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    animation: msgAlertIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes msgAlertIn {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+.msg-alert-text {
+    font-size: 12px;
+    color: #fff;
+}
+.msg-alert-ok {
+    padding: 6px 16px;
+    border-radius: 6px;
+    border: 1px solid #fff;
+    background: transparent;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.msg-alert-ok:hover {
+    background: rgba(0, 0, 0, 0.8);
 }
 
 .msg-date-separator {
