@@ -947,7 +947,7 @@
     clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
 }
 .msg-date-separator span {
-    font-size: 10px;
+    font-size: 13px;
     letter-spacing: 1.5px;
     color: #facc15;
     white-space: nowrap;

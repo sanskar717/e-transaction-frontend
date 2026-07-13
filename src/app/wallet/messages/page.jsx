@@ -59,6 +59,8 @@ export default function MessagesPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [showDisableConfirm, setShowDisableConfirm] = useState(false)
     const [alertMsg, setAlertMsg] = useState(null)
+    const [inboxTab, setInboxTab] = useState("inbox")
+    const [requests, setRequests] = useState([])
     const bottomRef = useRef(null)
     const chatBodyRef = useRef(null)
     const pollRef = useRef(null)
@@ -231,7 +233,38 @@ export default function MessagesPage() {
                 setConversations(
                     withPreview.map((c) => ({ ...c, unreadCount: counts[c.other_wallet] || 0 })),
                 )
+
+                if (data.requests) {
+                    const withPreview = await Promise.all(
+                        data.requests.map(async (r) => {
+                            let preview = ""
+                            try {
+                                preview = await decryptMessage(keypair.privateKey, r.last_content)
+                            } catch {
+                                preview = "⚠ Could not decrypt"
+                            }
+                            return { ...r, preview }
+                        }),
+                    )
+                    setRequests(withPreview)
+                }
             }
+        } catch (e) {
+            console.log(e)
+        }
+    }
+
+    const handleAcceptRequest = async (otherWallet) => {
+        try {
+            await fetch("/api/accept-request", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ address, otherWallet }),
+            })
+            setRequests((prev) => prev.filter((r) => r.other_wallet !== otherWallet))
+            await loadConversations()
+            setInboxTab("inbox")
+            openChat(otherWallet)
         } catch (e) {
             console.log(e)
         }
