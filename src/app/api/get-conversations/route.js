@@ -43,8 +43,16 @@ export async function GET(request) {
                 LEFT JOIN chat_permissions cp
                     ON cp.wallet_a = LEAST($1, sub.other_wallet)
                    AND cp.wallet_b = GREATEST($1, sub.other_wallet)
+                -- NEW: blocked wallets ko normal inbox se bahar rakho.
+                -- Yeh check karta hai ki maine unhe block kiya hai (blocker=me)
+                -- ya unhone mujhe block kiya hai (blocker=other) -- dono case
+                -- mein yeh conversation ab BLOCK-LIST tab mein jaayegi, inbox mein nahi.
+                LEFT JOIN chat_blocks cb
+                    ON (cb.blocker_wallet = $1 AND cb.blocked_wallet = sub.other_wallet)
+                    OR (cb.blocker_wallet = sub.other_wallet AND cb.blocked_wallet = $1)
                 WHERE sub.last_message_at > COALESCE(h.hidden_before, '1970-01-01T00:00:00Z')
                   AND (cp.status IS NULL OR cp.status = 'accepted' OR cp.initiated_by = $1)
+                  AND cb.blocker_wallet IS NULL
                 ORDER BY other_wallet, last_message_at DESC
             ) latest
             ORDER BY last_message_at DESC`,
@@ -76,9 +84,14 @@ export async function GET(request) {
                 LEFT JOIN conversation_hides h 
                     ON h.wallet_address = $1 AND h.other_wallet = sub.other_wallet
                 LEFT JOIN users u ON u.wallet_address = sub.other_wallet
+                -- NEW: blocked wallets requests mein bhi na dikhein
+                LEFT JOIN chat_blocks cb
+                    ON (cb.blocker_wallet = $1 AND cb.blocked_wallet = sub.other_wallet)
+                    OR (cb.blocker_wallet = sub.other_wallet AND cb.blocked_wallet = $1)
                 WHERE cp.status = 'pending'
                   AND cp.initiated_by != $1
                   AND sub.last_message_at > COALESCE(h.hidden_before, '1970-01-01T00:00:00Z')
+                  AND cb.blocker_wallet IS NULL
                 ORDER BY other_wallet, last_message_at DESC
             ) latest
             ORDER BY last_message_at DESC`,

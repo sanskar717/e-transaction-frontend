@@ -24,9 +24,27 @@ export async function POST(request) {
     try {
         await client.query("BEGIN")
 
-        // Try to create the permission row. RETURNING tells us if it was
-        // just created (brand new pair, first message ever -> always allow)
-        // or if it already existed (need to check status below).
+        const blockRes = await client.query(
+            `SELECT blocker_wallet, blocked_wallet FROM chat_blocks
+             WHERE (blocker_wallet = $1 AND blocked_wallet = $2)
+                OR (blocker_wallet = $2 AND blocked_wallet = $1)`,
+            [to, from]
+        )
+
+        if (blockRes.rows.length > 0) {
+            const blockedByReceiver = blockRes.rows.some(
+                (r) => r.blocker_wallet === to && r.blocked_wallet === from
+            )
+            await client.query("ROLLBACK")
+            return Response.json(
+                {
+                    success: false,
+                    error: blockedByReceiver ? "BLOCKED_BY_RECEIVER" : "YOU_BLOCKED_THEM",
+                },
+                { status: 403 }
+            )
+        }
+
         const insertRes = await client.query(
             `INSERT INTO chat_permissions (wallet_a, wallet_b, initiated_by, status)
              VALUES ($1, $2, $3, 'pending')
@@ -46,13 +64,11 @@ export async function POST(request) {
             )
             const perm = permRes.rows[0]
 
-            // sender already sent the first message and receiver hasn't accepted yet -> block
             if (perm.status === "pending" && perm.initiated_by === from) {
                 await client.query("ROLLBACK")
                 return Response.json({ success: false, error: "PENDING_REQUEST" }, { status: 403 })
             }
 
-            // the OTHER wallet initiated and is now pending -> this reply counts as accepting it
             if (perm.status === "pending" && perm.initiated_by !== from) {
                 await client.query(
                     `UPDATE chat_permissions SET status = 'accepted' WHERE wallet_a = $1 AND wallet_b = $2`,

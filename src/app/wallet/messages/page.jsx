@@ -61,9 +61,17 @@ export default function MessagesPage() {
     const [alertMsg, setAlertMsg] = useState(null)
     const [inboxTab, setInboxTab] = useState("inbox")
     const [requests, setRequests] = useState([])
+
+    // NEW: block feature state
+    const [blockedList, setBlockedList] = useState([])
+    const [blockStatus, setBlockStatus] = useState({ iBlockedThem: false, theyBlockedMe: false })
+    const [showUnblockConfirm, setShowUnblockConfirm] = useState(false)
+    const [showBlockConfirm, setShowBlockConfirm] = useState(false)
+
     const bottomRef = useRef(null)
     const chatBodyRef = useRef(null)
     const pollRef = useRef(null)
+    const blockSeqRef = useRef(0)
 
     useEffect(() => {
         const check = async () => {
@@ -260,6 +268,18 @@ export default function MessagesPage() {
         }
     }
 
+    // NEW: fetch list of wallets I have blocked
+    const loadBlockedList = async () => {
+        if (!address) return
+        try {
+            const res = await fetch(`/api/get-blocked-list?address=${address}`)
+            const data = await res.json()
+            setBlockedList(data.blocked || [])
+        } catch (e) {
+            console.log(e)
+        }
+    }
+
     const handleAcceptRequest = async (otherWallet) => {
         try {
             await fetch("/api/accept-request", {
@@ -273,6 +293,64 @@ export default function MessagesPage() {
             openChat(otherWallet)
         } catch (e) {
             console.log(e)
+        }
+    }
+
+    // NEW: block / unblock handlers
+    const handleBlockUser = () => {
+        if (!activeChat) return
+        setShowBlockConfirm(true)
+    }
+
+    const confirmBlockUser = async () => {
+        setShowBlockConfirm(false)
+        if (!activeChat) return
+        blockSeqRef.current += 1
+        try {
+            const res = await fetch("/api/block-user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ address, otherWallet: activeChat }),
+            })
+            const data = await res.json()
+            if (!res.ok || !data.success) {
+                setAlertMsg("Block failed, try again.")
+                return
+            }
+            setBlockStatus((prev) => ({ ...prev, iBlockedThem: true }))
+            setConversations((prev) => prev.filter((c) => c.other_wallet !== activeChat))
+            loadBlockedList()
+        } catch (e) {
+            console.log(e)
+            setAlertMsg("Block failed, try again.")
+        }
+    }
+
+    const handleUnblockUser = () => {
+        setShowUnblockConfirm(true)
+    }
+
+    const confirmUnblockUser = async () => {
+        setShowUnblockConfirm(false)
+        if (!activeChat) return
+        blockSeqRef.current += 1
+        try {
+            const res = await fetch("/api/unblock-user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ address, otherWallet: activeChat }),
+            })
+            const data = await res.json()
+            if (!res.ok || !data.success) {
+                setAlertMsg("Unblock failed, try again.")
+                return
+            }
+            setBlockStatus((prev) => ({ ...prev, iBlockedThem: false }))
+            setBlockedList((prev) => prev.filter((b) => b.other_wallet !== activeChat))
+            loadConversations()
+        } catch (e) {
+            console.log(e)
+            setAlertMsg("Unblock failed, try again.")
         }
     }
 
@@ -291,6 +369,7 @@ export default function MessagesPage() {
             })
             setMessages([])
             setConversations((prev) => prev.filter((c) => c.other_wallet !== activeChat))
+            setBlockedList((prev) => prev.filter((b) => b.other_wallet !== activeChat))
             setActiveChat(null)
             sessionStorage.removeItem(`activeMsgChat_${address.toLowerCase()}`)
         } catch (e) {
@@ -330,6 +409,29 @@ export default function MessagesPage() {
             console.log(e)
         }
 
+        // NEW: sirf non-silent (manual open) pe hi block status re-check karo
+        if (!silent) {
+            blockSeqRef.current += 1
+            const mySeq = blockSeqRef.current
+            try {
+                const bRes = await fetch(
+                    `/api/get-block-status?address=${address}&otherWallet=${clean}`,
+                )
+                const bData = await bRes.json()
+                if (mySeq === blockSeqRef.current) {
+                    setBlockStatus({
+                        iBlockedThem: !!bData.iBlockedThem,
+                        theyBlockedMe: !!bData.theyBlockedMe,
+                    })
+                }
+            } catch (e) {
+                console.log(e)
+                if (mySeq === blockSeqRef.current) {
+                    setBlockStatus({ iBlockedThem: false, theyBlockedMe: false })
+                }
+            }
+        }
+
         try {
             const res = await fetch(`/api/get-messages?address=${address}&with=${clean}`)
             const data = await res.json()
@@ -359,6 +461,7 @@ export default function MessagesPage() {
     useEffect(() => {
         if (keypair) {
             loadConversations()
+            loadBlockedList()
             if (activeChat) openChat(activeChat, true)
         }
     }, [keypair])
@@ -373,7 +476,7 @@ export default function MessagesPage() {
     }, [keypair, activeChat])
 
     useEffect(() => {
-        if (showDeleteConfirm || showDisableConfirm) {
+        if (showDeleteConfirm || showDisableConfirm || showUnblockConfirm) {
             document.body.style.overflow = "hidden"
         } else {
             document.body.style.overflow = ""
@@ -381,7 +484,7 @@ export default function MessagesPage() {
         return () => {
             document.body.style.overflow = ""
         }
-    }, [showDeleteConfirm, showDisableConfirm])
+    }, [showDeleteConfirm, showDisableConfirm, showUnblockConfirm])
 
     const prevMsgCount = useRef(0)
 
@@ -395,6 +498,11 @@ export default function MessagesPage() {
     const handleSend = async () => {
         const textToSend = newMsg.trim()
         if (!textToSend || !activeChat || sending) return
+
+        if (blockStatus.iBlockedThem) {
+            setAlertMsg("You have blocked this user. Unblock them to send a message.")
+            return
+        }
 
         setSending(true)
         setNewMsg("")
@@ -445,6 +553,24 @@ export default function MessagesPage() {
                     setSending(false)
                     return
                 }
+                // NEW: receiver has blocked me
+                if (sendData.error === "BLOCKED_BY_RECEIVER") {
+                    setMessages((prev) => prev.filter((m) => m.id !== tempId))
+                    setAlertMsg(
+                        "You can't message this user. You have been blocked. You won't be able to send messages until they unblock you.",
+                    )
+                    setBlockStatus((prev) => ({ ...prev, theyBlockedMe: true }))
+                    setSending(false)
+                    return
+                }
+                // NEW: I have blocked them (safety fallback)
+                if (sendData.error === "YOU_BLOCKED_THEM") {
+                    setMessages((prev) => prev.filter((m) => m.id !== tempId))
+                    setAlertMsg("You have blocked this user. Unblock them to send a message.")
+                    setBlockStatus((prev) => ({ ...prev, iBlockedThem: true }))
+                    setSending(false)
+                    return
+                }
                 throw new Error("send failed")
             }
 
@@ -454,7 +580,10 @@ export default function MessagesPage() {
 
             setConversations((prev) => {
                 const idx = prev.findIndex((c) => c.other_wallet === activeChat)
-                if (idx === -1) return prev
+                if (idx === -1) {
+                    loadConversations()
+                    return prev
+                }
                 const updated = [...prev]
                 const [item] = updated.splice(idx, 1)
                 updated.unshift({
@@ -464,8 +593,6 @@ export default function MessagesPage() {
                 })
                 return updated
             })
-
-            loadConversations()
         } catch (e) {
             console.log(e)
             setMessages((prev) =>
@@ -562,6 +689,73 @@ export default function MessagesPage() {
                             </div>,
                             document.body,
                         )}
+                    {/* NEW: unblock confirmation modal */}
+                    {showUnblockConfirm &&
+                        createPortal(
+                            <div
+                                className="msg-disable-overlay"
+                                onClick={() => setShowUnblockConfirm(false)}
+                            >
+                                <div
+                                    className="msg-disable-toast"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <div className="msg-disable-title">Unblock this user?</div>
+                                    <div className="msg-disable-sub">
+                                        They will be able to message you again once unblocked.
+                                    </div>
+                                    <div className="msg-disable-actions">
+                                        <button
+                                            className="msg-disable-cancel"
+                                            onClick={() => setShowUnblockConfirm(false)}
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            className="msg-disable-confirm"
+                                            onClick={confirmUnblockUser}
+                                        >
+                                            Unblock
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>,
+                            document.body,
+                        )}
+                    {/* NEW: block confirmation modal */}
+                    {showBlockConfirm &&
+                        createPortal(
+                            <div
+                                className="msg-disable-overlay"
+                                onClick={() => setShowBlockConfirm(false)}
+                            >
+                                <div
+                                    className="msg-disable-toast"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <div className="msg-disable-title">⚠ Block this user?</div>
+                                    <div className="msg-disable-sub">
+                                        Are you sure you want to block this user? After that they
+                                        won't be able to text you until you unblock them.
+                                    </div>
+                                    <div className="msg-disable-actions">
+                                        <button
+                                            className="msg-disable-cancel"
+                                            onClick={() => setShowBlockConfirm(false)}
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            className="msg-disable-confirm"
+                                            onClick={confirmBlockUser}
+                                        >
+                                            Block
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>,
+                            document.body,
+                        )}
                     {!keypair ? (
                         <div className="msg-setup">
                             <div className="msg-setup-title">ENABLE ENCRYPTED MESSAGING</div>
@@ -645,6 +839,18 @@ export default function MessagesPage() {
                                                 </span>
                                             )}
                                         </span>
+                                        {/* NEW: BLOCK-LIST tab */}
+                                        <span
+                                            className={`msg-inbox-label ${inboxTab === "blocked" ? "active" : ""}`}
+                                            onClick={() => setInboxTab("blocked")}
+                                        >
+                                            BLOCKED
+                                            {blockedList.length > 0 && (
+                                                <span className="msg-req-count msg-blocked-count">
+                                                    {blockedList.length}
+                                                </span>
+                                            )}
+                                        </span>
                                     </div>
 
                                     <div className="msg-inbox-list">
@@ -701,7 +907,7 @@ export default function MessagesPage() {
                                                     </div>
                                                 ))}
                                             </>
-                                        ) : (
+                                        ) : inboxTab === "requests" ? (
                                             <>
                                                 {requests.length === 0 && (
                                                     <div className="msg-inbox-empty">
@@ -738,6 +944,43 @@ export default function MessagesPage() {
                                                         >
                                                             Accept
                                                         </button>
+                                                    </div>
+                                                ))}
+                                            </>
+                                        ) : (
+                                            // NEW: BLOCK-LIST tab body
+                                            <>
+                                                {blockedList.length === 0 && (
+                                                    <div className="msg-inbox-empty">
+                                                        No blocked users
+                                                    </div>
+                                                )}
+                                                {blockedList.map((b) => (
+                                                    <div
+                                                        key={b.other_wallet}
+                                                        className={`msg-inbox-item msg-blocked-item ${
+                                                            activeChat === b.other_wallet
+                                                                ? "active"
+                                                                : ""
+                                                        }`}
+                                                        onClick={() => openChat(b.other_wallet)}
+                                                    >
+                                                        <div className="msg-inbox-avatar">
+                                                            {b.other_wallet
+                                                                .slice(2, 4)
+                                                                .toUpperCase()}
+                                                        </div>
+                                                        <div className="msg-inbox-info">
+                                                            <div className="msg-inbox-top-row">
+                                                                <div className="msg-inbox-name">
+                                                                    {b.username ||
+                                                                        `${b.other_wallet.slice(0, 6)}...${b.other_wallet.slice(-4)}`}
+                                                                </div>
+                                                            </div>
+                                                            <div className="msg-inbox-preview">
+                                                                Blocked
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </>
@@ -789,6 +1032,23 @@ export default function MessagesPage() {
                                                             ⤡ NORMAL
                                                         </button>
                                                     )}
+                                                    {/* NEW: Block / Unblock button, conditional */}
+                                                    {activeChat !== address?.toLowerCase() &&
+                                                        (blockStatus.iBlockedThem ? (
+                                                            <button
+                                                                className="msg-unblock-btn"
+                                                                onClick={handleUnblockUser}
+                                                            >
+                                                                Unblock
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                className="msg-block-btn"
+                                                                onClick={handleBlockUser}
+                                                            >
+                                                                Block
+                                                            </button>
+                                                        ))}
                                                     <button
                                                         className="msg-delete-btn"
                                                         onClick={handleDeleteConversation}
@@ -873,56 +1133,66 @@ export default function MessagesPage() {
                                                 })}
                                                 <div ref={bottomRef} />
                                             </div>
-                                            <div className="msg-chat-footer">
-                                                <input
-                                                    className="msg-input-text"
-                                                    placeholder="Type a message..."
-                                                    value={newMsg}
-                                                    onChange={(e) => setNewMsg(e.target.value)}
-                                                    onKeyDown={(e) =>
-                                                        e.key === "Enter" && handleSend()
-                                                    }
-                                                />
-                                                <div
-                                                    className={`msg-send-btn ${sending ? "sending" : ""}`}
-                                                    onClick={!sending ? handleSend : undefined}
-                                                    onMouseEnter={() => setSendHover(true)}
-                                                    onMouseLeave={() => setSendHover(false)}
-                                                    style={{
-                                                        opacity: sending ? 0.6 : 1,
-                                                        cursor: sending
-                                                            ? "not-allowed"
-                                                            : "pointer",
-                                                    }}
-                                                >
-                                                    <div
-                                                        className="skew-fill-left"
-                                                        style={{
-                                                            transform: sendHover
-                                                                ? "translateX(-110%) skewX(-8deg)"
-                                                                : "skewX(-8deg)",
-                                                        }}
+                                            {/* NEW: footer changes to a notice when blocked either way */}
+                                            {blockStatus.iBlockedThem ||
+                                            blockStatus.theyBlockedMe ? (
+                                                <div className="msg-blocked-footer">
+                                                    {blockStatus.iBlockedThem
+                                                        ? "You have blocked this user. Unblock them to send a message."
+                                                        : "You can't message this user. You have been blocked. You can message again once they unblock you."}
+                                                </div>
+                                            ) : (
+                                                <div className="msg-chat-footer">
+                                                    <input
+                                                        className="msg-input-text"
+                                                        placeholder="Type a message..."
+                                                        value={newMsg}
+                                                        onChange={(e) => setNewMsg(e.target.value)}
+                                                        onKeyDown={(e) =>
+                                                            e.key === "Enter" && handleSend()
+                                                        }
                                                     />
                                                     <div
-                                                        className="skew-fill-right"
+                                                        className={`msg-send-btn ${sending ? "sending" : ""}`}
+                                                        onClick={!sending ? handleSend : undefined}
+                                                        onMouseEnter={() => setSendHover(true)}
+                                                        onMouseLeave={() => setSendHover(false)}
                                                         style={{
-                                                            transform: sendHover
-                                                                ? "translateX(110%) skewX(-8deg)"
-                                                                : "skewX(-8deg)",
-                                                        }}
-                                                    />
-                                                    <span
-                                                        style={{
-                                                            position: "relative",
-                                                            zIndex: 1,
-                                                            color: sendHover ? "#fff" : "#000",
-                                                            transition: "color 0.4s ease",
+                                                            opacity: sending ? 0.6 : 1,
+                                                            cursor: sending
+                                                                ? "not-allowed"
+                                                                : "pointer",
                                                         }}
                                                     >
-                                                        {sending ? "..." : "SEND →"}
-                                                    </span>
+                                                        <div
+                                                            className="skew-fill-left"
+                                                            style={{
+                                                                transform: sendHover
+                                                                    ? "translateX(-110%) skewX(-8deg)"
+                                                                    : "skewX(-8deg)",
+                                                            }}
+                                                        />
+                                                        <div
+                                                            className="skew-fill-right"
+                                                            style={{
+                                                                transform: sendHover
+                                                                    ? "translateX(110%) skewX(-8deg)"
+                                                                    : "skewX(-8deg)",
+                                                            }}
+                                                        />
+                                                        <span
+                                                            style={{
+                                                                position: "relative",
+                                                                zIndex: 1,
+                                                                color: sendHover ? "#fff" : "#000",
+                                                                transition: "color 0.4s ease",
+                                                            }}
+                                                        >
+                                                            {sending ? "..." : "SEND →"}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
                                         </>
                                     )}
                                 </div>

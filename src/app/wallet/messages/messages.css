@@ -1049,3 +1049,64 @@
         padding: 16px 10px;
     }
 }
+
+/* ============================================================
+   NEW — BLOCK / UNBLOCK / BLOCK-LIST styles (added, nothing above touched)
+   ============================================================ */
+
+.msg-block-btn {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 2px solid rgba(239, 68, 68, 0.4);
+    background: transparent;
+    color: rgba(239, 68, 68, 0.85);
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+.msg-block-btn:hover {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.msg-unblock-btn {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 2px solid #facc15;
+    background: transparent;
+    color: #facc15;
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+.msg-unblock-btn:hover {
+    background: rgba(250, 204, 21, 0.12);
+}
+
+.msg-blocked-footer {
+    padding: 16px 22px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+    font-size: 12px;
+    color: rgba(239, 68, 68, 0.8);
+    text-align: center;
+    letter-spacing: 0.5px;
+    line-height: 1.5;
+}
+
+.msg-blocked-item .msg-inbox-name {
+    color: rgba(239, 68, 68, 0.85);
+}
+.msg-blocked-item .msg-inbox-preview {
+    color: rgba(239, 68, 68, 0.5);
+}
+
+.msg-blocked-count {
+    background: #ef4444;
+    color: #fff;
+}
