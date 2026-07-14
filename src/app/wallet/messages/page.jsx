@@ -187,6 +187,7 @@ export default function MessagesPage() {
         try {
             const res = await fetch(`/api/get-conversations?address=${address}`)
             const data = await res.json()
+
             if (data.conversations) {
                 const withPreview = await Promise.all(
                     data.conversations.map(async (c) => {
@@ -233,21 +234,26 @@ export default function MessagesPage() {
                 setConversations(
                     withPreview.map((c) => ({ ...c, unreadCount: counts[c.other_wallet] || 0 })),
                 )
+            }
 
-                if (data.requests) {
-                    const withPreview = await Promise.all(
-                        data.requests.map(async (r) => {
-                            let preview = ""
-                            try {
-                                preview = await decryptMessage(keypair.privateKey, r.last_content)
-                            } catch {
-                                preview = "⚠ Could not decrypt"
-                            }
-                            return { ...r, preview }
-                        }),
-                    )
-                    setRequests(withPreview)
-                }
+            if (data.requests) {
+                const withReqPreview = await Promise.all(
+                    data.requests.map(async (r) => {
+                        let preview = ""
+                        try {
+                            const isMine =
+                                r.last_from_wallet?.toLowerCase() === address.toLowerCase()
+                            const cipherToUse = isMine ? r.last_content_sender : r.last_content
+                            preview = await decryptMessage(keypair.privateKey, cipherToUse)
+                        } catch {
+                            preview = "⚠ Could not decrypt"
+                        }
+                        return { ...r, preview }
+                    }),
+                )
+                setRequests(withReqPreview)
+            } else {
+                setRequests([])
             }
         } catch (e) {
             console.log(e)
@@ -430,7 +436,17 @@ export default function MessagesPage() {
                 }),
             })
             const sendData = await sendRes.json()
-            if (!sendData.success) throw new Error("send failed")
+            if (!sendData.success) {
+                if (sendData.error === "PENDING_REQUEST") {
+                    setMessages((prev) => prev.filter((m) => m.id !== tempId))
+                    setAlertMsg(
+                        "You already sent one message. Wait for the other user to accept before sending another.",
+                    )
+                    setSending(false)
+                    return
+                }
+                throw new Error("send failed")
+            }
 
             setMessages((prev) =>
                 prev.map((m) => (m.id === tempId ? { ...m, pending: false } : m)),
@@ -611,52 +627,121 @@ export default function MessagesPage() {
                                         <span className="msg-open-btn-text">OPEN CHAT →</span>
                                     </button>
 
-                                    <div className="msg-inbox-title">INBOX</div>
+                                    <div className="msg-inbox-title-row">
+                                        <span
+                                            className={`msg-inbox-label ${inboxTab === "inbox" ? "active" : ""}`}
+                                            onClick={() => setInboxTab("inbox")}
+                                        >
+                                            INBOX
+                                        </span>
+                                        <span
+                                            className={`msg-inbox-label ${inboxTab === "requests" ? "active" : ""}`}
+                                            onClick={() => setInboxTab("requests")}
+                                        >
+                                            REQUESTS
+                                            {requests.length > 0 && (
+                                                <span className="msg-req-count">
+                                                    {requests.length}
+                                                </span>
+                                            )}
+                                        </span>
+                                    </div>
+
                                     <div className="msg-inbox-list">
-                                        {conversations.length === 0 && (
-                                            <div className="msg-inbox-empty">
-                                                No conversations yet
-                                            </div>
-                                        )}
-                                        {conversations.map((c) => (
-                                            <div
-                                                key={c.other_wallet}
-                                                className={`msg-inbox-item ${
-                                                    activeChat === c.other_wallet ? "active" : ""
-                                                } ${c.unreadCount > 0 ? "unread" : ""}`}
-                                                onClick={() => openChat(c.other_wallet)}
-                                            >
-                                                <div className="msg-inbox-avatar">
-                                                    {c.other_wallet.slice(2, 4).toUpperCase()}
-                                                </div>
-                                                <div className="msg-inbox-info">
-                                                    <div className="msg-inbox-top-row">
-                                                        <div className="msg-inbox-name">
-                                                            {c.other_wallet ===
-                                                            address?.toLowerCase()
-                                                                ? "Saved Messages"
-                                                                : c.username ||
-                                                                  `${c.other_wallet.slice(0, 6)}...${c.other_wallet.slice(-4)}`}
+                                        {inboxTab === "inbox" ? (
+                                            <>
+                                                {conversations.length === 0 && (
+                                                    <div className="msg-inbox-empty">
+                                                        No conversations yet
+                                                    </div>
+                                                )}
+                                                {conversations.map((c) => (
+                                                    <div
+                                                        key={c.other_wallet}
+                                                        className={`msg-inbox-item ${
+                                                            activeChat === c.other_wallet
+                                                                ? "active"
+                                                                : ""
+                                                        } ${c.unreadCount > 0 ? "unread" : ""}`}
+                                                        onClick={() => openChat(c.other_wallet)}
+                                                    >
+                                                        <div className="msg-inbox-avatar">
+                                                            {c.other_wallet
+                                                                .slice(2, 4)
+                                                                .toUpperCase()}
                                                         </div>
-                                                        <div className="msg-inbox-right">
-                                                            <div className="msg-inbox-time">
-                                                                {timeAgo(c.last_message_at)}
-                                                            </div>
-                                                            {c.unreadCount > 0 && (
-                                                                <div className="msg-unread-badge">
-                                                                    {c.unreadCount > 9
-                                                                        ? "9+"
-                                                                        : c.unreadCount}
+                                                        <div className="msg-inbox-info">
+                                                            <div className="msg-inbox-top-row">
+                                                                <div className="msg-inbox-name">
+                                                                    {c.other_wallet ===
+                                                                    address?.toLowerCase()
+                                                                        ? "Saved Messages"
+                                                                        : c.username ||
+                                                                          `${c.other_wallet.slice(0, 6)}...${c.other_wallet.slice(-4)}`}
                                                                 </div>
-                                                            )}
+                                                                <div className="msg-inbox-right">
+                                                                    <div className="msg-inbox-time">
+                                                                        {timeAgo(
+                                                                            c.last_message_at,
+                                                                        )}
+                                                                    </div>
+                                                                    {c.unreadCount > 0 && (
+                                                                        <div className="msg-unread-badge">
+                                                                            {c.unreadCount > 9
+                                                                                ? "9+"
+                                                                                : c.unreadCount}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="msg-inbox-preview">
+                                                                {c.preview}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <div className="msg-inbox-preview">
-                                                        {c.preview}
+                                                ))}
+                                            </>
+                                        ) : (
+                                            <>
+                                                {requests.length === 0 && (
+                                                    <div className="msg-inbox-empty">
+                                                        No pending requests
                                                     </div>
-                                                </div>
-                                            </div>
-                                        ))}
+                                                )}
+                                                {requests.map((r) => (
+                                                    <div
+                                                        key={r.other_wallet}
+                                                        className="msg-inbox-item msg-request-item"
+                                                    >
+                                                        <div className="msg-inbox-avatar">
+                                                            {r.other_wallet
+                                                                .slice(2, 4)
+                                                                .toUpperCase()}
+                                                        </div>
+                                                        <div className="msg-inbox-info">
+                                                            <div className="msg-inbox-top-row">
+                                                                <div className="msg-inbox-name">
+                                                                    {r.username ||
+                                                                        `${r.other_wallet.slice(0, 6)}...${r.other_wallet.slice(-4)}`}
+                                                                </div>
+                                                            </div>
+                                                            <div className="msg-inbox-preview">
+                                                                {r.preview}
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            className="msg-accept-btn"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                handleAcceptRequest(r.other_wallet)
+                                                            }}
+                                                        >
+                                                            Accept
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </>
+                                        )}
                                     </div>
                                 </div>
 

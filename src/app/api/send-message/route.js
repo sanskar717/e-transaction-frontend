@@ -24,31 +24,41 @@ export async function POST(request) {
     try {
         await client.query("BEGIN")
 
-        await client.query(
+        // Try to create the permission row. RETURNING tells us if it was
+        // just created (brand new pair, first message ever -> always allow)
+        // or if it already existed (need to check status below).
+        const insertRes = await client.query(
             `INSERT INTO chat_permissions (wallet_a, wallet_b, initiated_by, status)
              VALUES ($1, $2, $3, 'pending')
-             ON CONFLICT (wallet_a, wallet_b) DO NOTHING`,
+             ON CONFLICT (wallet_a, wallet_b) DO NOTHING
+             RETURNING *`,
             [wallet_a, wallet_b, from]
         )
 
-        const permRes = await client.query(
-            `SELECT status, initiated_by FROM chat_permissions
-             WHERE wallet_a = $1 AND wallet_b = $2
-             FOR UPDATE`,
-            [wallet_a, wallet_b]
-        )
-        const perm = permRes.rows[0]
+        const justCreated = insertRes.rows.length > 0
 
-        if (perm.status === "pending" && perm.initiated_by === from) {
-            await client.query("ROLLBACK")
-            return Response.json({ success: false, error: "PENDING_REQUEST" }, { status: 403 })
-        }
-
-        if (perm.status === "pending" && perm.initiated_by !== from) {
-            await client.query(
-                `UPDATE chat_permissions SET status = 'accepted' WHERE wallet_a = $1 AND wallet_b = $2`,
+        if (!justCreated) {
+            const permRes = await client.query(
+                `SELECT status, initiated_by FROM chat_permissions
+                 WHERE wallet_a = $1 AND wallet_b = $2
+                 FOR UPDATE`,
                 [wallet_a, wallet_b]
             )
+            const perm = permRes.rows[0]
+
+            // sender already sent the first message and receiver hasn't accepted yet -> block
+            if (perm.status === "pending" && perm.initiated_by === from) {
+                await client.query("ROLLBACK")
+                return Response.json({ success: false, error: "PENDING_REQUEST" }, { status: 403 })
+            }
+
+            // the OTHER wallet initiated and is now pending -> this reply counts as accepting it
+            if (perm.status === "pending" && perm.initiated_by !== from) {
+                await client.query(
+                    `UPDATE chat_permissions SET status = 'accepted' WHERE wallet_a = $1 AND wallet_b = $2`,
+                    [wallet_a, wallet_b]
+                )
+            }
         }
 
         await client.query(

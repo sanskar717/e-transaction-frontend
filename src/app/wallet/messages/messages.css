@@ -158,8 +158,7 @@
 }
 .msg-sidebar-title,
 .msg-input-wallet,
-.msg-open-btn,
-.msg-inbox-title {
+.msg-open-btn {
     margin-left: 20px;
     margin-right: 20px;
 }
@@ -235,14 +234,78 @@
 .msg-open-btn:hover .skew-fill-right {
     transform: translateX(110%) skewX(-8deg);
 }
-.msg-inbox-title {
-    font-size: 12px;
-    letter-spacing: 3px;
-    color: #fff;
+
+/* ===== INBOX / REQUESTS inline label toggle (next to each other, not buttons) ===== */
+.msg-inbox-title-row {
+    display: flex;
+    align-items: center;
+    gap: 18px;
     margin-top: 22px;
     margin-bottom: 10px;
     flex-shrink: 0;
+    margin-left: 20px;
+    margin-right: 20px;
 }
+.msg-inbox-label {
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s ease;
+    position: relative;
+    padding-bottom: 4px;
+}
+.msg-inbox-label:hover {
+    color: #fff;
+}
+.msg-inbox-label.active {
+    color: #fff;
+}
+.msg-inbox-label.active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: #facc15;
+    border-radius: 2px;
+}
+.msg-req-count {
+    background: #facc15;
+    color: #000;
+    font-size: 9px;
+    font-weight: 900;
+    padding: 1px 6px;
+    border-radius: 8px;
+    line-height: 1.4;
+}
+
+/* ===== Accept request button ===== */
+.msg-accept-btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid #fff;
+    background: transparent;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+.msg-accept-btn:hover {
+    background: #fff;
+    color: #000;
+}
+.msg-request-item {
+    cursor: default;
+}
+
 .msg-inbox-list {
     display: flex;
     flex-direction: column;
@@ -668,9 +731,15 @@
     background: rgba(255, 255, 255, 0.03);
 }
 
-/* ===== Delete conversation button — moved to left, red on hover ===== */
+/* ===== Delete button + Normal(collapse-fullscreen) button, grouped top-right of chat header ===== */
+.msg-chat-header-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
 .msg-delete-btn {
-    /* margin-left: auto; */
     padding: 8px 14px;
     border-radius: 6px;
     border: 2px solid rgba(255, 255, 255, 0.25);
@@ -682,13 +751,11 @@
     flex-shrink: 0;
     transition: all 0.2s ease;
 }
-
-.msg-chat-header-actions {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
+.msg-delete-btn:hover {
+    background: transparent;
+    border-color: #facc15;
+    border-width: 2px;
+    color: #facc15;
 }
 .msg-normal-btn {
     padding: 8px 14px;
@@ -707,21 +774,13 @@
     border-color: rgba(255, 255, 255, 0.6);
     color: #fff;
 }
-
 .msg-header-btn-group {
     display: flex;
     gap: 10px;
     flex-shrink: 0;
 }
 
-.msg-delete-btn:hover {
-    background: transparent;
-    border-color: #facc15;
-    border-width: 2px;
-    color: #facc15;
-}
-
-/* ===== Custom delete-confirmation modal (left side, replaces native confirm) ===== */
+/* ===== Custom delete-confirmation modal (right side, replaces native confirm) ===== */
 .msg-confirm-overlay {
     position: fixed;
     inset: 0;
@@ -798,6 +857,8 @@
     border-color: #ef4444;
     color: #ef4444;
 }
+
+/* ===== Disable-messaging confirmation toast (top center) ===== */
 .msg-disable-overlay {
     position: fixed;
     inset: 0;
@@ -881,6 +942,7 @@
     color: #ef4444;
 }
 
+/* ===== Generic alert toast (top right) ===== */
 .msg-alert-toast {
     position: fixed;
     top: 20px;
@@ -925,6 +987,7 @@
     background: rgba(0, 0, 0, 0.8);
 }
 
+/* ===== Yellow date separator in chat ===== */
 .msg-date-separator {
     display: flex;
     align-items: center;
