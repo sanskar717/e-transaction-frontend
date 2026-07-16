@@ -440,7 +440,7 @@ export default function LandingPage() {
                         <br />
                         <span style={{ color: "#dbf838" }}>&</span>
                         <br />
-                        <span style={{ color: "#f83838" }}>Your app subscription key.</span>
+                        <span style={{ color: "#f83838" }}>Your encryption Message section.</span>
                     </p>
                 </AnimateIn>
 
