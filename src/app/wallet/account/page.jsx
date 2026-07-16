@@ -284,15 +284,6 @@ export default function AccountPage() {
                                     gap: "12px",
                                 }}
                             >
-                                {/* <div className="tracking-tile">
-                                    <div className="tile-label">TRACKING</div>
-                                    <div className="tile-desc">
-                                        Pause transaction tracking without removing your
-                                        registration.
-                                    </div>
-                                    <button className="stop-btn">STOP TRACKING</button>
-                                </div> */}
-
                                 <div
                                     className={`remove-tile${confirmRemove ? " confirming" : ""}`}
                                 >

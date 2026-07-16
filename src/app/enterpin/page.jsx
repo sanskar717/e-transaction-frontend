@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import ShootingStars from "../../components/ShootingStars"
-import { checkIfRegistered, checkHasPinSet } from "../../config/contracts"
+import { checkIfRegistered, checkHasPinSet, removeWallet } from "../../config/contracts"
 import "../setpin/Setpin.css"
 
 export default function EnterPinPage() {
@@ -14,6 +14,11 @@ export default function EnterPinPage() {
     const [shake, setShake] = useState(false)
     const [showPin, setShowPin] = useState(false)
     const [btnHover, setBtnHover] = useState(false)
+    const [address, setAddress] = useState(null)
+    const [wrongAttempts, setWrongAttempts] = useState(0)
+    const [confirmForgot, setConfirmForgot] = useState(false)
+    const [forgotLoading, setForgotLoading] = useState(false)
+    const [forgotMsg, setForgotMsg] = useState(null)
     const inputRefs = useRef([])
 
     useEffect(() => {
@@ -29,15 +34,16 @@ export default function EnterPinPage() {
                     router.push("/")
                     return
                 }
-                const address = accounts[0]
-                const isRegistered = await checkIfRegistered(address)
+                const addr = accounts[0]
+                setAddress(addr)
+                const isRegistered = await checkIfRegistered(addr)
 
                 if (!isRegistered) {
                     router.push("/setpin")
                     return
                 }
 
-                const hasPinSet = await checkHasPinSet(address)
+                const hasPinSet = await checkHasPinSet(addr)
 
                 if (!hasPinSet) {
                     router.push("/setpin")
@@ -98,12 +104,12 @@ export default function EnterPinPage() {
         setLoading(true)
         try {
             const accounts = await window.ethereum.request({ method: "eth_accounts" })
-            const address = accounts[0]
+            const addr = accounts[0]
 
             const res = await fetch("/api/verify-pin", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ address, pin: pin.join("") }),
+                body: JSON.stringify({ address: addr, pin: pin.join("") }),
             })
 
             const data = await res.json()
@@ -116,6 +122,7 @@ export default function EnterPinPage() {
             } else {
                 setError("Wrong PIN — try again")
                 setPin(["", "", "", "", ""])
+                setWrongAttempts((n) => n + 1)
                 triggerShake()
                 setTimeout(() => inputRefs.current[0]?.focus(), 50)
             }
@@ -125,6 +132,31 @@ export default function EnterPinPage() {
             triggerShake()
         }
         setLoading(false)
+    }
+
+    const handleForgotPin = async () => {
+        if (!confirmForgot) {
+            setConfirmForgot(true)
+            return
+        }
+        setForgotLoading(true)
+        setForgotMsg(null)
+        try {
+            await removeWallet()
+
+            await fetch("/api/delete-user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ walletAddress: address }),
+            })
+
+            sessionStorage.removeItem("session")
+            router.push("/setpin")
+        } catch (e) {
+            console.log("Forgot PIN error:", e)
+            setForgotMsg("✕ TRANSACTION FAILED — TRY AGAIN")
+        }
+        setForgotLoading(false)
     }
 
     if (checking) {
@@ -258,6 +290,49 @@ export default function EnterPinPage() {
                         )}
                     </span>
                 </div>
+
+                {/* Forgot PIN — only after 3 wrong attempts */}
+                {wrongAttempts >= 3 && (
+                    <>
+                        <button
+                            className="setpin-btn-ghost"
+                            onClick={handleForgotPin}
+                            disabled={forgotLoading}
+                            style={{ display: "block", margin: "16px auto 0" }}
+                        >
+                            {forgotLoading
+                                ? "REMOVING WALLET..."
+                                : confirmForgot
+                                  ? "⚠ CONFIRM — REMOVE WALLET"
+                                  : "FORGOT PIN?"}
+                        </button>
+
+                        {confirmForgot && !forgotLoading && (
+                            <>
+                                <div
+                                    className="setpin-error"
+                                    style={{ textAlign: "center", marginTop: "10px" }}
+                                >
+                                    ⚠ This will remove your wallet registration. You'll need to set
+                                    a new PIN. Your data stays safe.
+                                </div>
+                                <button
+                                    className="setpin-btn-ghost"
+                                    onClick={() => setConfirmForgot(false)}
+                                    style={{ display: "block", margin: "8px auto 0" }}
+                                >
+                                    CANCEL
+                                </button>
+                            </>
+                        )}
+
+                        {forgotMsg && (
+                            <div className="setpin-error" style={{ textAlign: "center" }}>
+                                {forgotMsg}
+                            </div>
+                        )}
+                    </>
+                )}
 
                 <button
                     className="setpin-btn-ghost"
