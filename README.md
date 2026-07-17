@@ -4,6 +4,10 @@ A decentralized Web3 wallet dashboard built on Ethereum (Sepolia testnet) — co
 
 > **Status:** Live on Sepolia testnet. Vercel production deployment in progress (ETA 1–2 days).
 
+## 🌐 Live Demo
+
+**App:** https://etransactions.vercel.app
+
 ---
 
 ## Table of Contents
